@@ -9,23 +9,24 @@ using namespace std;
 void prompt();
 bool isVaild(char c);                                              //初始化向量时判断字符是否为有效字符
 void initialVector(vector<float> &v, string &sf, char c, bool iv); //初始化向量,不截取字符串再转换成vector，避免空格太多超出字符串长度
-string dotProduct(vector<float> v[]);                             //点积运算
+string dotProduct(vector<float> v[]);                              //点积运算
 
-void preprocess(string &prenum1, string &prenum2, string &num1, string &num2, const char *numop1,
-                const char *numop2, int &pposi1, int &pposi2, bool &ispoint1, bool &ispoint2, int &afterpoint,
+void preprocess(string &prenum1, string &prenum2, string &num1, string &num2, const char *&numop1,
+                const char *&numop2, int &pposi1, int &pposi2, bool &ispoint1, bool &ispoint2, int &afterpoint,
                 int &beforepoint, int &sign1posi, int &sign2posi, int &len1, int &len2, int &minlen, int &maxlen,
-                int &outlen, int *outcome, bool &isresultsign); //预处理
+                int &outlen, int *&outcome, bool &isresultsign); //预处理
 string finalprocess(char operat, string &num1, string &num2, const char *numop1,
                     const char *numop2, int &pposi1, int &pposi2, bool &ispoint1, bool &ispoint2, int &afterpoint,
                     int &beforepoint, int &sign1posi, int &sign2posi, int &len1, int &len2, int &minlen, int &maxlen,
                     int &outlen, int *outcome, bool &isresultsign); //最后的处理
-void multiply(string &num1, string &num2, const char *numop1, const char *numop2, int &pposi1, int &pposi2,
-              int &sign1posi, int &sign2posi, int &len1, int &len2, int &outlen, int *outcome,
+void multiply(string &num1, string &num2, const char *&numop1, const char *numop2, int &pposi1, int &pposi2,
+              int &sign1posi, int &sign2posi, int &len1, int &len2, int &outlen, int *&outcome,
               bool &isresultsign); //乘法
-void addition(const char *numop1, const char *numop2, int &pposi1, int &pposi2, bool &ispoint1, bool &ispoint2,
+void addition(const char *&numop1, const char *&numop2, int &pposi1, int &pposi2, bool &ispoint1, bool &ispoint2,
               int &afterpoint, int &beforepoint, int &sign1posi, int &sign2posi, int &len1, int &len2,
-              int &minlen, int &maxlen, int &outlen, int *outcome, bool &isresultsign); //将乘得的结果加到sum
-string result(float f1, float f2, string sum);                                          //两向量点积的结果可能过大，需要大数计算
+              int &minlen, int &maxlen, int &outlen, int *&outcome, bool &isresultsign); //将乘得的结果加到sum
+string deleteZorePadding(string s);                                                      //消除零后缀
+string result(float f1, float f2, string sum);                                           //两向量点积的结果可能过大，需要大数计算
 
 int main()
 {
@@ -84,6 +85,7 @@ void initialVector(vector<float> &v, string &sf, char c, bool iv)
                 {
                     const char *element = sf.c_str();
                     v.push_back(atof(element));
+                    sf.clear();
                 }
             }
         }
@@ -96,7 +98,9 @@ string dotProduct(vector<float> v[])
     for (int i = 0; i < v[0].size(); i++)
     {
         sum = result(v[0][i], v[1][i], sum);
+        sum = deleteZorePadding(sum);
     }
+
     return sum;
 }
 
@@ -155,8 +159,8 @@ string result(float f1, float f2, string sum)
     return sum;
 }
 
-void multiply(string &num1, string &num2, const char *numop1, const char *numop2, int &pposi1, int &pposi2,
-              int &sign1posi, int &sign2posi, int &len1, int &len2, int &outlen, int *outcome, bool &isresultsign)
+void multiply(string &num1, string &num2, const char *&numop1, const char *numop2, int &pposi1, int &pposi2,
+              int &sign1posi, int &sign2posi, int &len1, int &len2, int &outlen, int *&outcome, bool &isresultsign)
 {
     int back1 = pposi1 == num1.size() ? 0 : 1; //消除小数点的位
     int back2 = pposi2 == num2.size() ? 0 : 1;
@@ -183,9 +187,9 @@ void multiply(string &num1, string &num2, const char *numop1, const char *numop2
         isresultsign = true;
 }
 
-void addition(const char *numop1, const char *numop2, int &pposi1, int &pposi2, bool &ispoint1, bool &ispoint2,
+void addition(const char *&numop1, const char *&numop2, int &pposi1, int &pposi2, bool &ispoint1, bool &ispoint2,
               int &afterpoint, int &beforepoint, int &sign1posi, int &sign2posi, int &len1, int &len2,
-              int &minlen, int &maxlen, int &outlen, int *outcome, bool &isresultsign)
+              int &minlen, int &maxlen, int &outlen, int *&outcome, bool &isresultsign)
 {
     if (ispoint2 || ispoint1)
     {
@@ -350,10 +354,10 @@ void addition(const char *numop1, const char *numop2, int &pposi1, int &pposi2, 
         isresultsign = true;
 }
 
-void preprocess(string &prenum1, string &prenum2, string &num1, string &num2, const char *numop1,
-                const char *numop2, int &pposi1, int &pposi2, bool &ispoint1, bool &ispoint2, int &afterpoint,
+void preprocess(string &prenum1, string &prenum2, string &num1, string &num2, const char *&numop1,
+                const char *&numop2, int &pposi1, int &pposi2, bool &ispoint1, bool &ispoint2, int &afterpoint,
                 int &beforepoint, int &sign1posi, int &sign2posi, int &len1, int &len2, int &minlen, int &maxlen,
-                int &outlen, int *outcome, bool &isresultsign)
+                int &outlen, int *&outcome, bool &isresultsign)
 {
     //除去正号
     if (prenum1[0] == '+')
@@ -554,4 +558,17 @@ string finalprocess(char operat, string &num1, string &num2, const char *numop1,
     delete[] pointresult;
 
     return resultstr;
+}
+
+string deleteZorePadding(string s)
+{
+    int i = s.length() - 1;
+    while (s[i] == '0')
+    {
+        i--;
+    }
+    if (s[i] == '.')
+        i--;
+
+    return s.substr(0, i + 1);
 }
