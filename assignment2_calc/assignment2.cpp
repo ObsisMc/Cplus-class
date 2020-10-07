@@ -890,7 +890,7 @@ int *substract(int *result, const char *num1, const char *num2, int len1, int le
     if (!ispoint2)
         pposi2 = 0;
 
-    int firstpause; //小数点之后两数的重叠区域
+    int firstpause; //小数点之后两数的重叠区域，从后往前数
     if (pposi1 > pposi2 && ispoint2 || ispoint1 && !ispoint2)
     {
         firstpause = pposi1 - pposi2;
@@ -900,7 +900,7 @@ int *substract(int *result, const char *num1, const char *num2, int len1, int le
         firstpause = pposi2 - pposi1;
     }
 
-    int secondpause; //小数点前两数的重叠区域
+    int secondpause; //小数点前两数的重叠区域，从后往前数
     if (isnum1afterlong)
     {
         secondpause = len2 - (ispoint2 ? pposi2 : -1) + afterpoint;
@@ -1016,7 +1016,7 @@ int *substract(int *result, const char *num1, const char *num2, int len1, int le
             int index;
             if (isnum1afterlong)
             {
-                index = len1 - sign1 - 1 - i;
+                index = len1 + sign1 - 1 - i;
             }
             else
             {
