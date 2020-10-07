@@ -35,6 +35,7 @@ string result(float f1, float f2, string sum); //两向量点积的结果可能�
 int isVaild(char c, char afterc); //初始化向量时判断字符是否为有效字符
 bool isVaild_VaildChar(char c, char ac);
 bool isVaild_InvaildChar(char c);
+bool isVaild_NoEnter(vector<float> v);
 bool isVaild_IsFloat(string f);
 bool isVaild_DifferentLen(vector<float> v1, vector<float> v2);
 bool warning_LosePrecision(string f);
@@ -69,6 +70,7 @@ int main()
             do
             {
                 strfloat = "";
+                vector[0].clear();
                 cout << "vector 1 : ";
                 initialVector(vector[0], strfloat, c, isvaild);
                 rewind(stdin); //除去换行符
@@ -77,12 +79,15 @@ int main()
             do
             {
                 strfloat = "";
+                vector[1].clear();
                 cout << "vector 2 : ";
                 initialVector(vector[1], strfloat, c, isvaild);
                 rewind(stdin); //除去换行符
             } while (!isvaild);
 
-            if (isvaild)
+            //检查向量长度是否一致
+            bool issamelen = isVaild_DifferentLen(vector[0], vector[1]);
+            if (issamelen)
             {
                 //计算
                 string sum = dotProduct(vector);
@@ -91,14 +96,22 @@ int main()
                 cout << "-> " << sum << endl;
             }
         }
+        else
+        {
+            cout << "**Error: Please enter \"help\", \"quit\" or press enter.\n";
+        }
+
     } while (true);
 }
 
 void prompt()
 {
     cout << "Vectors calculator\n";
-    cout << "--------------------------------\n";
-    cout << "--------------------------------\n";
+    cout << "-----------------------------------------------------------------------------\n";
+    cout << "In the status of choosing mode, you can enter ";
+    cout << "\"quit\" or just press Enter to ";
+    cout << "quit or calculate dot product separately.\n";
+    cout << "------------------------------------------------------------------------------\n";
 }
 
 //检查合法的各种方法
@@ -146,11 +159,44 @@ bool isVaild_InvaildChar(char c)
 }
 // bool isVaild_IsFloat(string f);
 // bool warning_LosePrecision(string f);
+bool isVaild_DifferentLen(vector<float> v1, vector<float> v2)
+{
+    if (v1.size() != v2.size())
+    {
+        cout << "**Error: The two vectors' lengths are different and dot product need the same lengths.\n";
+        return false;
+    }
+    return true;
+}
+bool isVaild_NoEnter(char c)
+{
+    if (c == '\n')
+    {
+        cout << "**Error: The vector has no element. Please enter again.\n";
+        return false;
+    }
+    return true;
+}
 
 //初始化向量
 void initialVector(vector<float> &v, string &sf, char c, bool &iv)
 {
     char tem = getchar();
+    if (v.empty())
+    {
+        if (!isVaild_NoEnter(tem))
+        {
+            iv = false;
+            return;
+        }
+    }
+
+    if (!(tem >= 48 && tem <= 57))
+    {
+        cout << "**Error: The first character should be number.Please enter again.\n";
+        iv = false;
+        return;
+    }
 
     do
     {
@@ -179,13 +225,13 @@ void initialVector(vector<float> &v, string &sf, char c, bool &iv)
         }
         else if (vaild == 1)
         {
-            cout << "**There are invaild characters. Please enter again.\n";
+            cout << "**Error: There are invaild characters. Please enter again.\n";
             iv = false;
             return;
         }
         else if (vaild == 2)
         {
-            cout << "**All characters are vaild but there are invaild arrangements. Please enter again.\n";
+            cout << "**Error: All characters are vaild but there are invaild arrangements. Please enter again.\n";
             iv = false;
             return;
         }
