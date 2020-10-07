@@ -1,5 +1,4 @@
-//单个vector长度有限，向量多长依然不行（sum用string存储同，但已经足够大）
-//未完成等效减法的加法
+//单个vector长度有限，向量太长依然不行（sum用string存储同，但已经足够大，虽然float精度只有几位，但其最大e+38仍有必要大数）
 
 #include <iostream>
 #include <vector>
@@ -30,6 +29,7 @@ int *substract(int *result, const char *num1, const char *num2, int len1, int le
                int sign1, int sign2, int pposi1, int pposi2, bool isnum1afterlong, bool ispoint1, bool ispoint2); //小数减法
 
 string deleteZorePadding(string s);            //消除零后缀
+string scientificSum(string sum);              //最终结果以科学计数法显示，因为精度只有float
 string result(float f1, float f2, string sum); //两向量点积的结果可能过大，需要大数计算
 
 //判断是否合法
@@ -107,7 +107,7 @@ int main()
 
                 warning_LosePrecision(sum); //是否丢失精度
                 //输出
-                cout << "-> " << sum << endl;
+                cout << "-> " << scientificSum(sum) << endl;
             }
         }
         else
@@ -176,7 +176,7 @@ void warning_LosePrecision(string f)
 {
     if (f.size() > 7)
     {
-        cout << "(Warning: Only the first six or seven places are precise.)\n";
+        cout << "(**Warning: Places after seven place are omitted because of precision.)\n";
     }
 }
 bool isVaild_DifferentLen(vector<float> v1, vector<float> v2)
@@ -273,7 +273,6 @@ string dotProduct(vector<float> v[])
     for (int i = 0; i < v[0].size(); i++)
     {
         sum = result(v[0][i], v[1][i], sum);
-        sum = deleteZorePadding(sum);
     }
 
     return sum;
@@ -1041,6 +1040,13 @@ int *substract(int *result, const char *num1, const char *num2, int len1, int le
 
 string deleteZorePadding(string s)
 {
+    // int j = s.length() - 1;
+    // while (s[j] != '.' && j >= 0)
+    // {
+    //     j--;
+    // }
+    // if (j = -1)
+    //     return s;
     int i = s.length() - 1;
     while (s[i] == '0')
     {
@@ -1050,4 +1056,53 @@ string deleteZorePadding(string s)
         i--;
 
     return s.substr(0, i + 1);
+}
+
+string scientificSum(string sum)
+{
+    string result;
+    int pointposi = sum.length() - 1; //小数点位置
+    int exp = 0;                      //10的指数大小
+    while (sum[pointposi] != '.' && pointposi >= 0)
+    {
+        pointposi--;
+    }
+    if (pointposi == -1)
+    {
+        exp = sum.length() - 1;
+    }
+    else
+    {
+        exp = pointposi - 1;
+    }
+
+    if (pointposi == -1 && sum.size() <= 7 || pointposi != -1 && sum.size() <= 8)
+    {
+        return sum;
+    }
+    else
+    {
+        string scienstr;
+
+        if (pointposi == -1)
+        {
+            exp = sum.length() - 1;
+            scienstr = sum.substr(0, 1) + "." + sum.substr(1, 6);
+        }
+        else
+        {
+            exp = pointposi - 1;
+            if (pointposi > 5)
+            {
+                scienstr = sum.substr(0, 1) + "." + sum.substr(1, 6);
+            }
+            else
+            {
+                scienstr = sum.substr(0, 1) + "." + sum.substr(1, pointposi) + sum.substr(pointposi + 1, 6 - pointposi);
+            }
+        }
+
+        result = scienstr + "E+" + to_string(exp);
+    }
+    return result;
 }
