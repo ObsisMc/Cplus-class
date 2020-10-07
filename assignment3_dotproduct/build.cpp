@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>
+#include <windows.h>
 
 using namespace std;
 
@@ -36,12 +37,12 @@ int isVaild(char c, char afterc); //初始化向量时判断字符是否为有�
 bool isVaild_VaildChar(char c, char ac);
 bool isVaild_InvaildChar(char c);
 bool isVaild_NoEnter(vector<float> v);
-bool isVaild_IsFloat(string f);
 bool isVaild_DifferentLen(vector<float> v1, vector<float> v2);
-bool warning_LosePrecision(string f);
+void warning_LosePrecision(string f);
 
 int main()
 {
+    cout.setf(ios_base::fixed, ios_base::floatfield);
     //提示
     prompt();
 
@@ -89,9 +90,22 @@ int main()
             bool issamelen = isVaild_DifferentLen(vector[0], vector[1]);
             if (issamelen)
             {
-                //计算
-                string sum = dotProduct(vector);
+                double time = 0;
+                double counts = 0;
 
+                //计算用时
+                LARGE_INTEGER nFreq;
+                LARGE_INTEGER nBeginTime;
+                LARGE_INTEGER nEndTime;
+                QueryPerformanceFrequency(&nFreq);
+                QueryPerformanceCounter(&nBeginTime);                                              //开始计时
+                                                                                                   //计算
+                string sum = dotProduct(vector);                                                   //...测试代码
+                QueryPerformanceCounter(&nEndTime);                                                //停止计时
+                time = (double)(nEndTime.QuadPart - nBeginTime.QuadPart) / (double)nFreq.QuadPart; //计算程序执行时间单位为s
+                cout << "(time: " << time * 1000 << "ms)" << endl;
+
+                warning_LosePrecision(sum); //是否丢失精度
                 //输出
                 cout << "-> " << sum << endl;
             }
@@ -157,8 +171,14 @@ bool isVaild_InvaildChar(char c)
         return true;
     return false;
 }
-// bool isVaild_IsFloat(string f);
-// bool warning_LosePrecision(string f);
+
+void warning_LosePrecision(string f)
+{
+    if (f.size() > 7)
+    {
+        cout << "(Warning: Only the first six or seven places are precise.)\n";
+    }
+}
 bool isVaild_DifferentLen(vector<float> v1, vector<float> v2)
 {
     if (v1.size() != v2.size())
@@ -177,7 +197,6 @@ bool isVaild_NoEnter(char c)
     }
     return true;
 }
-
 //初始化向量
 void initialVector(vector<float> &v, string &sf, char c, bool &iv)
 {
@@ -217,8 +236,15 @@ void initialVector(vector<float> &v, string &sf, char c, bool &iv)
                     sf = sf + c;
                 else
                 {
-                    const char *element = sf.c_str();
-                    v.push_back(atof(element));
+                    double e = atof(sf.c_str());
+                    if (e > __FLT_MAX__ || e < __FLT_MIN__)
+                    {
+                        cout << "Error: There are non-float numbers. Please enter again.\n";
+                        iv = false;
+                        return;
+                    }
+
+                    v.push_back(e);
                     sf.clear();
                 }
             }
