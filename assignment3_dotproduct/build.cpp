@@ -30,17 +30,6 @@ int main()
     strfloat = " ";
     cout << "vector 2 :";
     initialVector(vector[1], strfloat, c, isvaild);
-    cout << vector[0].size();
-    cout << vector[1].size();
-
-    // for (int i = 0; i < 1; i++)
-    // {
-
-    //     for (int j = 0; j < vector[i].size(); j++)
-    //     {
-    //         cout << vector[i][j];
-    //     }
-    // }
 }
 
 void prompt()
