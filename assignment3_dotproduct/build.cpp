@@ -24,38 +24,46 @@ void multiply(string &num1, string &num2, const char *&numop1, const char *numop
               bool &isresultsign); //乘法
 void addition(const char *&numop1, const char *&numop2, int &pposi1, int &pposi2, bool &ispoint1, bool &ispoint2,
               int &afterpoint, int &beforepoint, int &sign1posi, int &sign2posi, int &len1, int &len2,
-              int &minlen, int &maxlen, int &outlen, int *&outcome, bool &isresultsign); //将乘得的结果加到sum
-string deleteZorePadding(string s);                                                      //消除零后缀
-string result(float f1, float f2, string sum);                                           //两向量点积的结果可能过大，需要大数计算
+              int &minlen, int &maxlen, int &outlen, int *&outcome, bool &isresultsign);                   //将乘得的结果加到sum
+int *substract(int *result, const char *num1, const char *num2, int len1, int len2, int sign1, int sign2); //整数减法
+int *substract(int *result, const char *num1, const char *num2, int len1, int len2, int beforepoint, int afterpoint,
+               int sign1, int sign2, int pposi1, int pposi2, bool isnum1afterlong, bool ispoint1, bool ispoint2); //小数减法
+
+string deleteZorePadding(string s);            //消除零后缀
+string result(float f1, float f2, string sum); //两向量点积的结果可能过大，需要大数计算
 
 int main()
 {
     //提示
     prompt();
 
-    //用vector存储
-    vector<float> vector[2];
-    vector[0].reserve(1000);
-    vector[1].reserve(1000);
+    do
+    {
+        //用vector存储
+        vector<float> vector[2];
+        vector[0].reserve(1000);
+        vector[1].reserve(1000);
 
-    //初始化vector
-    string strfloat = ""; //存浮点数
-    char c;               //获得的每个字符
-    bool isvaild = true;  //判断是否为有效字符
+        //初始化vector
+        string strfloat = ""; //存浮点数
+        char c;               //获得的每个字符
+        bool isvaild = true;  //判断是否为有效字符
 
-    cout << "vector 1 :";
-    initialVector(vector[0], strfloat, c, isvaild);
+        cout << "vector 1 :";
+        initialVector(vector[0], strfloat, c, isvaild);
 
-    rewind(stdin); //除去换行符
-    strfloat = " ";
-    cout << "vector 2 :";
-    initialVector(vector[1], strfloat, c, isvaild);
+        rewind(stdin); //除去换行符
+        strfloat = " ";
+        cout << "vector 2 :";
+        initialVector(vector[1], strfloat, c, isvaild);
 
-    //计算
-    string sum = dotProduct(vector);
+        //计算
+        string sum = dotProduct(vector);
 
-    //输出
-    cout << sum;
+        //输出
+        cout << sum << endl;
+
+    } while (true);
 }
 
 void prompt()
@@ -66,7 +74,7 @@ void prompt()
 }
 bool isVaild(char c)
 {
-    if (c >= 48 && c <= 57 || c == ' ' || c == ',' || c == '.' || c == '\n')
+    if (c >= 48 && c <= 57 || c == ' ' || c == '-' || c == '+' || c == ',' || c == '.' || c == '\n')
         return true;
     return false;
 }
@@ -147,6 +155,7 @@ string result(float f1, float f2, string sum)
     string result = finalprocess('*', num1, num2, numop1, numop2, pposi1, pposi2, ispoint1, ispoint2, afterpoint,
                                  beforepoint, sign1posi, sign2posi, len1, len2, minlen, maxlen, outlen, outcome,
                                  isresultsign);
+    // string resultdz = deleteZorePadding(result);
 
     //结果与sum相加
     preprocess(result, sum, num1, num2, numop1, numop2, pposi1, pposi2, ispoint1, ispoint2, afterpoint,
@@ -191,167 +200,276 @@ void addition(const char *&numop1, const char *&numop2, int &pposi1, int &pposi2
               int &afterpoint, int &beforepoint, int &sign1posi, int &sign2posi, int &len1, int &len2,
               int &minlen, int &maxlen, int &outlen, int *&outcome, bool &isresultsign)
 {
-    if (ispoint2 || ispoint1)
+    if (sign1posi == sign2posi) //加法
     {
-        bool isnum1afterlong = true;                              //num1小数点前的位数前是否是最长的
-        bool isnum1beforelong = true;                             //num1小数点后的位数前是否是最长的
-        if (pposi1 > pposi2 && ispoint2 || ispoint1 && !ispoint2) //计算小数点后的最长长度
+        if (ispoint2 || ispoint1)
         {
-            afterpoint = pposi1;
-        }
-        else
-        {
-            afterpoint = pposi2;
-            isnum1afterlong = false;
-        }
-        if (len1 - (ispoint1 ? pposi1 + 1 : 0) > len2 - (ispoint2 ? pposi2 + 1 : 0)) //小数点前的最长位数
-        {
-            beforepoint = len1 - (ispoint1 ? pposi1 + 1 : 0);
-        }
-        else
-        {
-            beforepoint = len2 - (ispoint2 ? pposi2 + 1 : 0);
-            isnum1beforelong = false;
-        }
-
-        //确定长度
-        outlen = afterpoint + beforepoint + 1;
-        //创建数组
-        outcome = new int[outlen]();
-
-        int firstpause; //循环中第一个停止点
-        if (pposi1 > pposi2 && ispoint2 || ispoint1 && !ispoint2)
-            firstpause = pposi1 - (ispoint2 ? pposi2 : 0);
-        else
-            firstpause = pposi2 - (ispoint1 ? pposi1 : 0);
-
-        for (int i = 0; i < outlen; i++) //开始计算
-        {
-            if (i < firstpause) //小数点后，较长位数的数字与较短位数的数字  没有  重叠的区域
+            bool isnum1afterlong = true;                              //num1小数点前的位数前是否是最长的
+            bool isnum1beforelong = true;                             //num1小数点后的位数前是否是最长的
+            if (pposi1 > pposi2 && ispoint2 || ispoint1 && !ispoint2) //计算小数点后的最长长度
             {
-                if (isnum1afterlong)
-                {
-                    int index = len1 + sign1posi - i - 1;
-                    outcome[i] = numop1[index] - 48;
-                }
-                else
-                {
-                    int index = len2 + sign2posi - i - 1;
-                    outcome[i] = numop2[index] - 48;
-                }
-            }
-            else if (i < afterpoint) //小数点后，较长位数的数字与较短位数的数字  有  重叠的区域
-            {
-                if (isnum1afterlong)
-                {
-                    int index1 = len1 + sign1posi - i - 1;
-                    int index2 = len2 + sign2posi - (i - pposi1 + pposi2) - 1;
-                    outcome[i] = numop1[index1] + numop2[index2] - 96;
-                }
-                else
-                {
-                    int index1 = len2 + sign2posi - i - 1;
-                    int index2 = len1 + sign1posi - (i - pposi2 + pposi1) - 1;
-                    outcome[i] = numop2[index1] + numop1[index2] - 96;
-                }
-            }
-            else if (i > afterpoint) //小数点前
-            {
-                if (isnum1beforelong) //第一个数小数点前的位数较大
-                {
-                    if (i < afterpoint + len2 - (ispoint2 ? pposi2 : -1)) //小数点前的位数中，两数字长度相等的地方
-                    {
-                        if (isnum1afterlong)
-                        {
-                            int index1 = len1 + sign1posi - i - 1;
-                            int index2 = len2 + sign2posi - (i - pposi1 + (ispoint2 ? pposi2 : -1)) - 1;
-                            outcome[i - 1] = numop1[index1] + numop2[index2] - 96;
-                        }
-                        else
-                        {
-                            int index1 = len2 + sign2posi - i - 1;
-                            int index2 = len1 + sign1posi - (i - pposi2 + (ispoint1 ? pposi1 : -1)) - 1;
-                            outcome[i - 1] = numop2[index1] + numop1[index2] - 96;
-                        }
-                    }
-                    else //小数点前的位数中，两较长位数的数字与较短位数的数字  没有 重叠的区域
-                    {
-                        if (isnum1afterlong) //在第一个数小数点后的位数较大的情况下,第一个数小数点前的位数较大
-                        {
-                            int index = len1 + sign1posi - i - 1;
-                            outcome[i - 1] = numop1[index] - 48;
-                        }
-                        else //在第二个数小数点后的位数较大的情况下,第一个数小数点前的位数较大
-                        {
-                            int index = len1 + sign1posi - (i - pposi2 + (ispoint1 ? pposi1 : -1)) - 1;
-                            outcome[i - 1] = numop1[index] - 48;
-                        }
-                    }
-                }
-                else //第一个数小数点前的位数较大
-                {
-                    if (i < afterpoint + len1 - (ispoint1 ? pposi1 : -1))
-                    {
-                        if (isnum1afterlong)
-                        {
-                            int index1 = len1 + sign1posi - i - 1;
-                            int index2 = len2 + sign2posi - (i - pposi1 + (ispoint2 ? pposi2 : -1)) - 1;
-                            outcome[i - 1] = numop1[index1] + numop2[index2] - 96;
-                        }
-                        else
-                        {
-                            int index1 = len2 + sign2posi - i - 1;
-                            int index2 = len1 + sign1posi - (i - pposi2 + (ispoint1 ? pposi1 : -1)) - 1;
-                            outcome[i - 1] = numop2[index1] + numop1[index2] - 96;
-                        }
-                    }
-                    else //小数点前的位数中，两较长位数的数字与较短位数的数字  没有 重叠的区域
-                    {
-                        if (isnum1afterlong)
-                        {
-                            int index = len2 + sign2posi - (i - pposi1 + (ispoint2 ? pposi2 : -1)) - 1;
-                            outcome[i - 1] = numop2[index] - 48;
-                        }
-                        else
-                        {
-                            int index = len2 + sign2posi - i - 1;
-                            outcome[i - 1] = numop2[index] - 48;
-                        }
-                    }
-                }
-            }
-        }
-    }
-    else //没有小数的加法
-    {
-        //确定长度
-        outlen = maxlen + 1;
-        //创建数组
-        outcome = new int[outlen]();
-
-        for (int i = 0; i < maxlen; i++)
-        {
-            if (i <= minlen - 1)
-            {
-                int value = numop1[len1 + sign1posi - 1 - i] + numop2[len2 + sign2posi - 1 - i] - 96;
-                outcome[i] = value;
+                afterpoint = pposi1;
             }
             else
             {
-                if (minlen == len1)
+                afterpoint = pposi2;
+                isnum1afterlong = false;
+            }
+            if (len1 - (ispoint1 ? pposi1 + 1 : 0) > len2 - (ispoint2 ? pposi2 + 1 : 0)) //小数点前的最长位数
+            {
+                beforepoint = len1 - (ispoint1 ? pposi1 + 1 : 0);
+            }
+            else
+            {
+                beforepoint = len2 - (ispoint2 ? pposi2 + 1 : 0);
+                isnum1beforelong = false;
+            }
+
+            //确定长度
+            outlen = afterpoint + beforepoint + 1;
+            //创建数组
+            outcome = new int[outlen]();
+
+            int firstpause; //循环中第一个停止点
+            if (pposi1 > pposi2 && ispoint2 || ispoint1 && !ispoint2)
+                firstpause = pposi1 - (ispoint2 ? pposi2 : 0);
+            else
+                firstpause = pposi2 - (ispoint1 ? pposi1 : 0);
+
+            for (int i = 0; i < outlen; i++) //开始计算
+            {
+                if (i < firstpause) //小数点后，较长位数的数字与较短位数的数字  没有  重叠的区域
                 {
-                    outcome[i] = numop2[len2 + sign2posi - 1 - i] - 48;
+                    if (isnum1afterlong)
+                    {
+                        int index = len1 + sign1posi - i - 1;
+                        outcome[i] = numop1[index] - 48;
+                    }
+                    else
+                    {
+                        int index = len2 + sign2posi - i - 1;
+                        outcome[i] = numop2[index] - 48;
+                    }
                 }
-                else
+                else if (i < afterpoint) //小数点后，较长位数的数字与较短位数的数字  有  重叠的区域
                 {
-                    outcome[i] = numop1[len1 + sign1posi - 1 - i] - 48;
+                    if (isnum1afterlong)
+                    {
+                        int index1 = len1 + sign1posi - i - 1;
+                        int index2 = len2 + sign2posi - (i - pposi1 + pposi2) - 1;
+                        outcome[i] = numop1[index1] + numop2[index2] - 96;
+                    }
+                    else
+                    {
+                        int index1 = len2 + sign2posi - i - 1;
+                        int index2 = len1 + sign1posi - (i - pposi2 + pposi1) - 1;
+                        outcome[i] = numop2[index1] + numop1[index2] - 96;
+                    }
+                }
+                else if (i > afterpoint) //小数点前
+                {
+                    if (isnum1beforelong) //第一个数小数点前的位数较大
+                    {
+                        if (i < afterpoint + len2 - (ispoint2 ? pposi2 : -1)) //小数点前的位数中，两数字长度相等的地方
+                        {
+                            if (isnum1afterlong)
+                            {
+                                int index1 = len1 + sign1posi - i - 1;
+                                int index2 = len2 + sign2posi - (i - pposi1 + (ispoint2 ? pposi2 : -1)) - 1;
+                                outcome[i - 1] = numop1[index1] + numop2[index2] - 96;
+                            }
+                            else
+                            {
+                                int index1 = len2 + sign2posi - i - 1;
+                                int index2 = len1 + sign1posi - (i - pposi2 + (ispoint1 ? pposi1 : -1)) - 1;
+                                outcome[i - 1] = numop2[index1] + numop1[index2] - 96;
+                            }
+                        }
+                        else //小数点前的位数中，两较长位数的数字与较短位数的数字  没有 重叠的区域
+                        {
+                            if (isnum1afterlong) //在第一个数小数点后的位数较大的情况下,第一个数小数点前的位数较大
+                            {
+                                int index = len1 + sign1posi - i - 1;
+                                outcome[i - 1] = numop1[index] - 48;
+                            }
+                            else //在第二个数小数点后的位数较大的情况下,第一个数小数点前的位数较大
+                            {
+                                int index = len1 + sign1posi - (i - pposi2 + (ispoint1 ? pposi1 : -1)) - 1;
+                                outcome[i - 1] = numop1[index] - 48;
+                            }
+                        }
+                    }
+                    else //第一个数小数点前的位数较大
+                    {
+                        if (i < afterpoint + len1 - (ispoint1 ? pposi1 : -1))
+                        {
+                            if (isnum1afterlong)
+                            {
+                                int index1 = len1 + sign1posi - i - 1;
+                                int index2 = len2 + sign2posi - (i - pposi1 + (ispoint2 ? pposi2 : -1)) - 1;
+                                outcome[i - 1] = numop1[index1] + numop2[index2] - 96;
+                            }
+                            else
+                            {
+                                int index1 = len2 + sign2posi - i - 1;
+                                int index2 = len1 + sign1posi - (i - pposi2 + (ispoint1 ? pposi1 : -1)) - 1;
+                                outcome[i - 1] = numop2[index1] + numop1[index2] - 96;
+                            }
+                        }
+                        else //小数点前的位数中，两较长位数的数字与较短位数的数字  没有 重叠的区域
+                        {
+                            if (isnum1afterlong)
+                            {
+                                int index = len2 + sign2posi - (i - pposi1 + (ispoint2 ? pposi2 : -1)) - 1;
+                                outcome[i - 1] = numop2[index] - 48;
+                            }
+                            else
+                            {
+                                int index = len2 + sign2posi - i - 1;
+                                outcome[i - 1] = numop2[index] - 48;
+                            }
+                        }
+                    }
                 }
             }
         }
-    }
+        else //没有小数的加法
+        {
+            //确定长度
+            outlen = maxlen + 1;
+            //创建数组
+            outcome = new int[outlen]();
 
-    if (sign1posi == 1)
-        isresultsign = true;
+            for (int i = 0; i < maxlen; i++)
+            {
+                if (i <= minlen - 1)
+                {
+                    int value = numop1[len1 + sign1posi - 1 - i] + numop2[len2 + sign2posi - 1 - i] - 96;
+                    outcome[i] = value;
+                }
+                else
+                {
+                    if (minlen == len1)
+                    {
+                        outcome[i] = numop2[len2 + sign2posi - 1 - i] - 48;
+                    }
+                    else
+                    {
+                        outcome[i] = numop1[len1 + sign1posi - 1 - i] - 48;
+                    }
+                }
+            }
+        }
+
+        if (sign1posi == 1)
+            isresultsign = true;
+    }
+    else //等效减法
+    {
+        bool isnum1afterlong = true; //num1小数点前的位数前是否是最长的
+        if (ispoint1 || ispoint2)    //有小数点
+        {
+            if (ispoint1 && !ispoint2 || pposi1 >= pposi2 && ispoint1 && ispoint2) //找到小数点后最大位数
+            {
+                afterpoint = pposi1;
+            }
+            else
+            {
+                afterpoint = pposi2;
+                isnum1afterlong = false;
+            }
+
+            int beforep1 = len1 - (ispoint1 ? pposi1 : -1) - 1; //第一个数小数点前有几位
+            int beforep2 = len2 - (ispoint2 ? pposi2 : -1) - 1; //第二个数小数点前有几位
+            beforepoint = beforep1 > beforep2 ? beforep1 : beforep2;
+
+            outlen = afterpoint + beforepoint;
+            outcome = new int[outlen];
+        }
+        else //无小数点
+        {
+            outlen = maxlen;
+            outcome = new int[outlen]();
+        }
+
+        //开始计算
+        if (len1 - (ispoint1 ? pposi1 + 1 : 0) > len2 - (ispoint2 ? pposi2 + 1 : 0)) //第一个数小数点前的位数大
+        {
+            if (ispoint1 || ispoint2)
+            {
+                outcome = substract(outcome, numop1, numop2, len1, len2, beforepoint, afterpoint, sign1posi, sign2posi, pposi1, pposi2, isnum1afterlong, ispoint1, ispoint2);
+            }
+            else
+            {
+                outcome = substract(outcome, numop1, numop2, len1, len2, sign1posi, sign2posi);
+            }
+            isresultsign = false;
+        }
+        else if (len1 - (ispoint1 ? pposi1 + 1 : 0) == len2 - (ispoint2 ? pposi2 + 1 : 0)) //两个数的小数点前的位数一样
+        {
+            int tag1 = INT_MAX;
+            int tag2 = INT_MAX;
+            for (int i = 0; i < len1; i++)
+            {
+                if (i > len2 - 1)
+                    break;
+                if (numop1[i + sign1posi] > numop2[i + sign2posi])
+                    tag1 = i;
+                else if (numop1[i + sign1posi] < numop2[i + sign2posi])
+                    tag2 = i;
+                if (tag1 != INT_MAX && tag2 != INT_MAX)
+                    break;
+            }
+            if (tag1 > tag2 || tag1 == tag2 && len1 < len2) //第2个数大
+            {
+                if (ispoint1 || ispoint2)
+                {
+                    if (pposi2 < pposi1 && ispoint2 && ispoint1 || !ispoint2 && ispoint1)
+                        isnum1afterlong = false;
+                    else
+                        isnum1afterlong = true;
+                    outcome = substract(outcome, numop2, numop1, len2, len1, beforepoint, afterpoint, sign2posi, sign1posi, pposi2, pposi1, isnum1afterlong, ispoint2, ispoint1);
+                }
+                else
+                    outcome = substract(outcome, numop2, numop1, len2, len1, sign2posi, sign1posi);
+                isresultsign = true;
+            }
+            else if (tag1 < tag2 || tag1 == tag2 && len1 > len2) //第1个数大
+            {
+                if (ispoint1 || ispoint2)
+                    outcome = substract(outcome, numop1, numop2, len1, len2, beforepoint, afterpoint, sign1posi, sign2posi, pposi1, pposi2, isnum1afterlong, ispoint1, ispoint2);
+                else
+                    outcome = substract(outcome, numop1, numop2, len1, len2, sign1posi, sign2posi);
+                isresultsign = false;
+            }
+            else //两数相等
+            {
+                for (int i = 0; i < outlen; i++)
+                {
+                    outcome[i] = 0;
+                }
+                ispoint1 = false;
+                ispoint2 = false;
+                isresultsign = false;
+            }
+        }
+        else //第二个数小数点前的位数大
+        {
+            if (ispoint1 || ispoint2)
+            {
+                if (pposi2 < pposi1 && ispoint2 && ispoint1 || !ispoint2 && ispoint1)
+                    isnum1afterlong = false;
+                else
+                    isnum1afterlong = true;
+                outcome = substract(outcome, numop2, numop1, len2, len1, beforepoint, afterpoint, sign2posi, sign1posi, pposi2, pposi1, isnum1afterlong, ispoint2, ispoint1);
+            }
+            else
+            {
+                outcome = substract(outcome, numop2, numop1, len2, len1, sign2posi, sign1posi);
+            }
+            isresultsign = true;
+        }
+    }
 }
 
 void preprocess(string &prenum1, string &prenum2, string &num1, string &num2, const char *&numop1,
@@ -558,6 +676,199 @@ string finalprocess(char operat, string &num1, string &num2, const char *numop1,
     delete[] pointresult;
 
     return resultstr;
+}
+
+int *substract(int *result, const char *num1, const char *num2, int len1, int len2, int sign1, int sign2) //无小数点
+{
+    bool bit = false; //是否借位
+
+    for (int i = 0; i < len1; i++)
+    {
+        if (i < len2)
+        {
+            if (num1[len1 - 1 - i + sign1] - (bit ? 1 : 0) >= num2[len2 - 1 - i + sign2])
+            {
+                result[i] = num1[len1 - 1 - i + sign1] - (bit ? 1 : 0) - num2[len2 - 1 - i + sign2];
+                bit = false;
+            }
+            else
+            {
+                result[i] = num1[len1 - 1 - i + sign1] - (bit ? 1 : 0) - num2[len2 - 1 - i + sign2] + 10;
+                bit = true;
+            }
+        }
+        else
+        {
+            if (num1[len1 - 1 - i + sign1] - 48 - (bit ? 1 : 0) >= 0)
+            {
+                result[i] = num1[len1 - 1 - i + sign1] - (bit ? 1 : 0) - 48;
+                bit = false;
+            }
+            else
+            {
+                result[i] = num1[len1 - 1 - i + sign1] - (bit ? 1 : 0) + 10 - 48;
+                bit = true;
+            }
+        }
+    }
+
+    return result;
+}
+
+int *substract(int *result, const char *num1, const char *num2, int len1, int len2, int beforepoint, int afterpoint,
+               int sign1, int sign2, int pposi1, int pposi2, bool isnum1afterlong, bool ispoint1, bool ispoint2)
+{
+    int outlen = beforepoint + afterpoint;
+
+    if (!ispoint1)
+        pposi1 = 0;
+    if (!ispoint2)
+        pposi2 = 0;
+
+    int firstpause; //小数点之后两数的重叠区域
+    if (pposi1 > pposi2 && ispoint2 || ispoint1 && !ispoint2)
+    {
+        firstpause = pposi1 - pposi2;
+    }
+    else
+    {
+        firstpause = pposi2 - pposi1;
+    }
+
+    int secondpause; //小数点前两数的重叠区域
+    if (isnum1afterlong)
+    {
+        secondpause = len2 - (ispoint2 ? pposi2 : -1) + afterpoint;
+    }
+    else
+    {
+        secondpause = len2;
+    }
+
+    bool bit = false; //是否借位
+    for (int i = 0; i < outlen + 1; i++)
+    {
+        if (i < firstpause) //小数点之后重叠的部分
+        {
+            if (isnum1afterlong) //若被减数的小数点之后的位数大于减数的
+            {
+                int ans = num1[len1 + sign1 - i - 1] - 48;
+                result[i] = ans;
+                bit = false;
+            }
+            else //若被减数的小数点之后的位数小于减数的
+            {
+                if (num2[len2 + sign2 - 1 - i] > 48)
+                {
+                    if (!bit)
+                    {
+                        int ans = 10 - (num2[len2 + sign2 - 1 - i] - 48);
+                        result[i] = ans;
+                        bit = true;
+                    }
+                    else
+                    {
+                        int ans = 9 - (num2[len2 + sign2 - 1 - i] - 48);
+                        result[i] = ans;
+                    }
+                }
+                else
+                {
+                    if (bit)
+                    {
+                        result[i] = 9;
+                    }
+                    else
+                    {
+                        result[i] = 0;
+                    }
+                }
+            }
+        }
+        else if (i < afterpoint)
+        {
+            int index1;
+            int index2;
+            if (isnum1afterlong)
+            {
+                index1 = len1 + sign1 - i - 1;
+                if (pposi1 == pposi2)
+                    index2 = len2 + sign2 - (i - (pposi1 - (ispoint2 ? pposi2 : -1))) - 1;
+                else
+                    index2 = len2 + sign2 - (i - (pposi1 - (ispoint2 ? pposi2 : -1))) - 1;
+            }
+            else
+            {
+                index1 = len1 + sign1 - (i - (pposi2 - (ispoint1 ? pposi1 : -1))) - 1;
+                index2 = len2 + sign2 - i - 1;
+            }
+
+            if (num1[index1] - num2[index2] - (bit ? 1 : 0) >= 0)
+            {
+                result[i] = num1[index1] - num2[index2] - (bit ? 1 : 0);
+                bit = false;
+            }
+            else
+            {
+                result[i] = num1[index1] - num2[index2] - (bit ? 1 : 0) + 10;
+                bit = true;
+            }
+        }
+
+        else if (i == afterpoint)
+        {
+        }
+        else if (i < secondpause)
+        {
+            int index1;
+            int index2;
+            if (isnum1afterlong) //被减数小数点后位数长
+            {
+                index1 = len1 + sign1 - 1 - i;
+                index2 = len2 + sign2 - 1 - (i - (ispoint2 ? pposi1 - pposi2 : pposi1 + 1));
+            }
+            else //减数小数点后位数长
+            {
+                index1 = len1 + sign1 - 1 - (i - (ispoint1 ? pposi2 - pposi1 : pposi2 + 1));
+                index2 = len2 + sign2 - 1 - i;
+            }
+
+            if (num1[index1] - num2[index2] - (bit ? 1 : 0) >= 0)
+            {
+                int ans = num1[index1] - num2[index2] - (bit ? 1 : 0);
+                result[i - 1] = ans;
+                bit = false;
+            }
+            else
+            {
+                int ans = 10 + num1[index1] - num2[index2] - (bit ? 1 : 0);
+                result[i - 1] = ans;
+                bit = true;
+            }
+        }
+        else
+        {
+            int index;
+            if (isnum1afterlong)
+            {
+                index = len1 + sign1 - 1 - i;
+            }
+            else
+            {
+                index = len1 + sign1 - 1 - (i - (ispoint1 ? pposi2 - pposi1 : pposi2 + 1));
+            }
+
+            if (num1[index] - 48 - (bit ? 1 : 0) >= 0)
+            {
+                result[i - 1] = num1[index] - 48 - (bit ? 1 : 0);
+            }
+            else
+            {
+                result[i - 1] = num1[index] - 48 - (bit ? 1 : 0) + 10;
+            }
+        }
+    }
+    return result;
 }
 
 string deleteZorePadding(string s)
