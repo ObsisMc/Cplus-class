@@ -35,8 +35,8 @@ string scientificSum(string sum);              //最终结果以科学计数法�
 string result(float f1, float f2, string sum); //两向量点积的结果可能过大，需要大数计算
 
 //判断是否合法
-int isVaild(char c, char afterc); //初始化向量时判断字符是否为有效字符
-bool isVaild_VaildChar(char c, char ac);
+int isVaild(char c, char afterc, bool inexp); //初始化向量时判断字符是否为有效字符
+bool isVaild_VaildChar(char c, char ac, bool inexp);
 bool isVaild_InvaildChar(char c);
 bool isVaild_NoEnter(vector<float> v);
 bool isVaild_DifferentLen(vector<float> v1, vector<float> v2);
@@ -142,37 +142,44 @@ void help()
 }
 
 //检查合法的各种方法
-int isVaild(char c, char afterc)
+int isVaild(char c, char afterc, bool inexp)
 {
+
     if (isVaild_InvaildChar(c))
     {
-        if (isVaild_VaildChar(c, afterc))
+        if (isVaild_VaildChar(c, afterc, inexp))
         {
             return 0;
         }
         else
             return 2;
     }
+
     return 1;
 }
 
-bool isVaild_VaildChar(char c, char ac)
+bool isVaild_VaildChar(char c, char ac, bool inexp)
 {
     if (c <= 57 && c >= 48)
     {
-        if (ac == '-' || ac == '+')
+        if (ac == '-' || ac == '+' || (inexp && (ac == 'e' || ac == 'E')))
         {
             return false;
         }
     }
     else if (c == '-' || c == '+')
     {
-        if (ac == '-' || ac == '+' || ac == ',' || ac == '.' || ac == '\n')
+        if (ac == '-' || ac == '+' || ac == ',' || ac == '.' || ac == '\n' || ac == 'e' || ac == 'E')
             return false;
     }
     else if (c == ',' || c == '.')
     {
-        if (ac == '\n' || ac == ',' || ac == '.')
+        if (ac == '\n' || ac == ',' || ac == '.' || ac == 'e' || ac == 'E')
+            return false;
+    }
+    else if (c == 'e' || c == 'E')
+    {
+        if (!(ac == '+' || ac == '-') && !(ac >= 48 && ac <= 57))
             return false;
     }
 
@@ -180,7 +187,8 @@ bool isVaild_VaildChar(char c, char ac)
 }
 bool isVaild_InvaildChar(char c)
 {
-    if (c >= 48 && c <= 57 || c == ' ' || c == '-' || c == '+' || c == ',' || c == '.' || c == '\n')
+    if (c >= 48 && c <= 57 || c == ' ' || c == '-' || c == '+' || c == ',' || c == '.' || c == '\n' ||
+        c == 'e' || c == 'E')
         return true;
     return false;
 }
@@ -214,6 +222,8 @@ bool isVaild_NoEnter(char c)
 void initialVector(vector<float> &v, string &sf, char c, bool &iv)
 {
     char tem = getchar();
+    bool inexp = false;
+
     if (v.empty())
     {
         if (!isVaild_NoEnter(tem))
@@ -240,13 +250,19 @@ void initialVector(vector<float> &v, string &sf, char c, bool &iv)
             tem = afterc;       //由于上面已经getchar了，下一次循环将无法取到这个，因此用tem存
         }
 
-        int vaild = isVaild(c, afterc);
+        int vaild = isVaild(c, afterc, inexp);
         if (vaild == 0)
         {
             if (c != ' ')
             {
                 if (c != ',' && c != '\n')
+                {
                     sf = sf + c;
+                    if (c == 'e' || c == 'E')
+                    {
+                        inexp = true;
+                    }
+                }
                 else
                 {
                     double e = atof(sf.c_str());
@@ -259,6 +275,7 @@ void initialVector(vector<float> &v, string &sf, char c, bool &iv)
 
                     v.push_back(e);
                     sf.clear();
+                    inexp = false;
                 }
             }
         }
@@ -1136,5 +1153,4 @@ void randomVector()
     }
 
     cout << "\n";
-
 }
