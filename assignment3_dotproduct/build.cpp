@@ -3,10 +3,12 @@
 #include <iostream>
 #include <vector>
 #include <windows.h>
+#include <random>
 
 using namespace std;
 
 void prompt();
+void help();
 void initialVector(vector<float> &v, string &sf, char c, bool &iv); //初始化向量,不截取字符串再转换成vector，避免空格太多超出字符串长度
 string dotProduct(vector<float> v[]);                               //点积运算
 
@@ -40,6 +42,8 @@ bool isVaild_NoEnter(vector<float> v);
 bool isVaild_DifferentLen(vector<float> v1, vector<float> v2);
 void warning_LosePrecision(string f);
 
+void randomVector();
+
 int main()
 {
     cout.setf(ios_base::fixed, ios_base::floatfield);
@@ -55,7 +59,7 @@ int main()
         if (mode == "quit") //退出
             break;
         else if (mode == "help") //帮助
-            prompt();
+            help();
         else if (mode == "\0") //计算
         {
             //用vector存储
@@ -73,6 +77,7 @@ int main()
                 strfloat = "";
                 vector[0].clear();
                 cout << "vector 1 : ";
+                // randomVector(); //生成随机数
                 initialVector(vector[0], strfloat, c, isvaild);
                 rewind(stdin); //除去换行符
             } while (!isvaild);
@@ -82,6 +87,7 @@ int main()
                 strfloat = "";
                 vector[1].clear();
                 cout << "vector 2 : ";
+                // randomVector(); //生成随机数
                 initialVector(vector[1], strfloat, c, isvaild);
                 rewind(stdin); //除去换行符
             } while (!isvaild);
@@ -112,7 +118,7 @@ int main()
         }
         else
         {
-            cout << "**Error: Please enter \"help\", \"quit\" or press enter.\n";
+            cout << "**Error: Please enter \"help\", \"quit\" or press Enter.\n";
         }
 
     } while (true);
@@ -122,10 +128,17 @@ void prompt()
 {
     cout << "Vectors calculator\n";
     cout << "-----------------------------------------------------------------------------\n";
-    cout << "In the status of choosing mode, you can enter ";
-    cout << "\"quit\" or just press Enter to ";
-    cout << "quit or calculate dot product separately.\n";
-    cout << "------------------------------------------------------------------------------\n";
+}
+void help()
+{
+    cout << "help:\n";
+    cout << "    choose mode status:\n";
+    cout << "        \"help\": get help\n";
+    cout << "        \"quit\": quit calculator\n";
+    cout << "        press Enter: dot product\n";
+    cout << "    dot product:\n";
+    cout << "        use comma to split each element\n";
+    cout << "        press Enter to input another vector\n";
 }
 
 //检查合法的各种方法
@@ -237,7 +250,7 @@ void initialVector(vector<float> &v, string &sf, char c, bool &iv)
                 else
                 {
                     double e = atof(sf.c_str());
-                    if (e > __FLT_MAX__ || e < __FLT_MIN__)
+                    if (e > __FLT_MAX__ || e < -__FLT_MAX__)
                     {
                         cout << "Error: There are non-float numbers. Please enter again.\n";
                         iv = false;
@@ -1105,4 +1118,23 @@ string scientificSum(string sum)
         result = scienstr + "E+" + to_string(exp);
     }
     return result;
+}
+
+void randomVector()
+{
+    int number = 1;
+
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_real_distribution<double> time(-__FLT_MAX__, __FLT_MAX__);
+
+    for (int n = 0; n < number; ++n)
+    {
+        cout << time(gen);
+        if (n != number - 1)
+            cout << ",";
+    }
+
+    cout << "\n";
+
 }
