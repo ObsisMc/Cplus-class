@@ -197,7 +197,7 @@ void warning_LosePrecision(string f)
 {
     if (f.size() > 7)
     {
-        cout << "(**Warning: Places after seven place are omitted because of precision.)\n";
+        cout << "(**Warning: Result has been round to seven places because of precision.)\n";
     }
 }
 bool isVaild_DifferentLen(vector<float> v1, vector<float> v2)
@@ -233,7 +233,7 @@ void initialVector(vector<float> &v, string &sf, char c, bool &iv)
         }
     }
 
-    if (!(tem >= 48 && tem <= 57))
+    if (!(tem >= 48 && tem <= 57) && tem != '-' && tem != '+' && tem != ' ')
     {
         cout << "**Error: The first character should be number.Please enter again.\n";
         iv = false;
@@ -1113,23 +1113,37 @@ string scientificSum(string sum)
     else
     {
         string scienstr;
+        int start = (sum[0] == '-' || sum[0] == '+') ? 1 : 0;
+        int lastplace = 0;
 
         if (pointposi == -1)
         {
             exp = sum.length() - 1;
-            scienstr = sum.substr(0, 1) + "." + sum.substr(1, 6);
+            scienstr = sum.substr(start, 1) + "." + sum.substr(1 + start, 5);
+            lastplace = start + 6;
         }
         else
         {
             exp = pointposi - 1;
             if (pointposi > 5)
             {
-                scienstr = sum.substr(0, 1) + "." + sum.substr(1, 6);
+                scienstr = sum.substr(start, 1) + "." + sum.substr(1 + start, 5);
+                lastplace = start + 7;
             }
             else
             {
-                scienstr = sum.substr(0, 1) + "." + sum.substr(1, pointposi) + sum.substr(pointposi + 1, 6 - pointposi);
+                scienstr = sum.substr(start, 1) + "." + sum.substr(1 + start, pointposi) + sum.substr(pointposi + 1 + start, 5 - pointposi);
+                lastplace = 7 + start;
             }
+        }
+
+        if (atoi(to_string(sum[lastplace + 1]).c_str()) < 5)
+        {
+            scienstr += sum.substr(lastplace, 1);
+        }
+        else
+        {
+            scienstr += to_string(atoi(sum.substr(lastplace, 1).c_str()) + 1);
         }
 
         result = scienstr + "E+" + to_string(exp);
