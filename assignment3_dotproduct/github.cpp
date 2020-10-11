@@ -1,16 +1,14 @@
-//string转数字不用atof,直接转
+//单个vector长度有限，向量多长依然不行（sum用string存储同，但已经足够大）
+//未完成等效减法的加法
 
 #include <iostream>
 #include <vector>
-#include <windows.h>
-#include <random>
 
 using namespace std;
 
 void prompt();
-void help();
-void initialVector(vector<string> &v, string &sf, char c, bool &iv); //初始化向量,不截取字符串再转换成vector，避免空格太多超出字符串长度
-string dotProduct(vector<string> v[]);                               //点积运算
+void initialVector(vector<float> &v, string &sf, char c, bool &iv); //初始化向量,不截取字符串再转换成vector，避免空格太多超出字符串长度
+string dotProduct(vector<float> v[]);                               //点积运算
 
 void preprocess(string &prenum1, string &prenum2, string &num1, string &num2, const char *&numop1,
                 const char *&numop2, int &pposi1, int &pposi2, bool &ispoint1, bool &ispoint2, int &afterpoint,
@@ -30,95 +28,51 @@ int *substract(int *result, const char *num1, const char *num2, int len1, int le
 int *substract(int *result, const char *num1, const char *num2, int len1, int len2, int beforepoint, int afterpoint,
                int sign1, int sign2, int pposi1, int pposi2, bool isnum1afterlong, bool ispoint1, bool ispoint2); //小数减法
 
-string deleteZorePadding(string s);              //消除零后缀
-string scientificSum(string sum);                //最终结果以科学计数法显示，因为精度只有float
-string result(string f1, string f2, string sum); //两向量点积的结果可能过大，需要大数计算
+string deleteZorePadding(string s);            //消除零后缀
+string result(float f1, float f2, string sum); //两向量点积的结果可能过大，需要大数计算
 
 //判断是否合法
-int isVaild(char c, char afterc, bool inexp); //初始化向量时判断字符是否为有效字符
-bool isVaild_VaildChar(char c, char ac, bool inexp);
+int isVaild(char c, char afterc); //初始化向量时判断字符是否为有效字符
+bool isVaild_VaildChar(char c, char ac);
 bool isVaild_InvaildChar(char c);
-bool isVaild_NoEnter(vector<string> v);
-bool isVaild_DifferentLen(vector<string> v1, vector<string> v2);
-void warning_LosePrecision(string f);
-
-void randomVector();
+bool isVaild_IsFloat(string f);
+bool warning_LosePrecision(string f);
 
 int main()
 {
-    cout.setf(ios_base::fixed, ios_base::floatfield);
     //提示
     prompt();
 
     do
     {
-        //询问执行什么
-        cout << "*Please choose mode(press Enter to calculate dot product): ";
-        string mode;
-        getline(cin, mode);
-        if (mode == "quit") //退出
-            break;
-        else if (mode == "help") //帮助
-            help();
-        else if (mode == "\0") //计算
+        //用vector存储
+        vector<float> vector[2];
+        vector[0].reserve(1000);
+        vector[1].reserve(1000);
+
+        //初始化vector
+        string strfloat = ""; //存浮点数
+        char c;               //获得的每个字符
+        bool isvaild = true;  //判断是否为有效字符
+
+        cout << "vector 1 :";
+        initialVector(vector[0], strfloat, c, isvaild);
+
+        rewind(stdin); //除去换行符
+        if (isvaild)
         {
-            //用vector存储
-            vector<string> vector[2];
-            vector[0].reserve(1000);
-            vector[1].reserve(1000);
-
-            //初始化vector
-            string strfloat = ""; //存浮点数
-            char c;               //获得的每个字符
-            bool isvaild = true;  //判断是否合法
-
-            do
-            {
-                strfloat = "";
-                vector[0].clear();
-                cout << "vector 1 : ";
-                // randomVector(); //生成随机数
-                initialVector(vector[0], strfloat, c, isvaild);
-                rewind(stdin); //除去换行符
-            } while (!isvaild);
-
-            do
-            {
-                strfloat = "";
-                vector[1].clear();
-                cout << "vector 2 : ";
-                // randomVector(); //生成随机数
-                initialVector(vector[1], strfloat, c, isvaild);
-                rewind(stdin); //除去换行符
-            } while (!isvaild);
-
-            //检查向量长度是否一致
-            bool issamelen = isVaild_DifferentLen(vector[0], vector[1]);
-            if (issamelen)
-            {
-                double time = 0;
-                double counts = 0;
-
-                //计算用时
-                LARGE_INTEGER nFreq;
-                LARGE_INTEGER nBeginTime;
-                LARGE_INTEGER nEndTime;
-                QueryPerformanceFrequency(&nFreq);
-                QueryPerformanceCounter(&nBeginTime);                                              //开始计时
-                                                                                                   //计算
-                string sum = dotProduct(vector);                                                   //...测试代码
-                QueryPerformanceCounter(&nEndTime);                                                //停止计时
-                time = (double)(nEndTime.QuadPart - nBeginTime.QuadPart) / (double)nFreq.QuadPart; //计算程序执行时间单位为s
-                cout << "(time: " << time * 1000 << "ms)" << endl;
-
-                warning_LosePrecision(sum); //是否丢失精度
-                //输出
-                cout << "-> " << scientificSum(sum) << endl;
-            }
+            strfloat = " ";
+            cout << "vector 2 : ";
+            initialVector(vector[1], strfloat, c, isvaild);
         }
-        else
+
+        if (isvaild)
         {
-            cout << "**Error: Please enter \"help\", \"quit\" or press Enter.\n";
+            //计算
+            string sum = dotProduct(vector);
+
+            //输出
+            cout << "-> " << sum << endl;
         }
 
     } while (true);
@@ -127,59 +81,34 @@ int main()
 void prompt()
 {
     cout << "Vectors calculator\n";
-    cout << "-----------------------------------------------------------------------------\n";
-}
-void help()
-{
-    cout << "help:\n";
-    cout << "    choose mode status:\n";
-    cout << "        \"help\": get help\n";
-    cout << "        \"quit\": quit calculator\n";
-    cout << "        press Enter: dot product\n";
-    cout << "    dot product:\n";
-    cout << "        use comma to split each element\n";
-    cout << "        press Enter to input another vector\n";
+    cout << "--------------------------------\n";
+    cout << "--------------------------------\n";
 }
 
-//检查合法的各种方法
-int isVaild(char c, char afterc, bool inexp)
+//是否合法的各种方法
+int isVaild(char c, char afterc)
 {
-
     if (isVaild_InvaildChar(c))
     {
-        if (isVaild_VaildChar(c, afterc, inexp))
+        if (isVaild_VaildChar(c, afterc))
         {
             return 0;
         }
         else
             return 2;
     }
-
     return 1;
 }
-
-bool isVaild_VaildChar(char c, char ac, bool inexp)
+bool isVaild_VaildChar(char c, char ac)
 {
-    if (c <= 57 && c >= 48)
+    if (c == '-' || c == '+')
     {
-        if (ac == '-' || ac == '+' || (inexp && (ac == 'e' || ac == 'E')))
-        {
-            return false;
-        }
-    }
-    else if (c == '-' || c == '+')
-    {
-        if (ac == '-' || ac == '+' || ac == ',' || ac == '.' || ac == '\n' || ac == 'e' || ac == 'E')
+        if (ac == '-' || ac == '+' || ac == ',' || ac == '.' || ac == '\n')
             return false;
     }
     else if (c == ',' || c == '.')
     {
-        if (ac == '\n' || ac == ',' || ac == '.' || ac == 'e' || ac == 'E')
-            return false;
-    }
-    else if (c == 'e' || c == 'E')
-    {
-        if (!(ac == '+' || ac == '-') && !(ac >= 48 && ac <= 57))
+        if (ac == '\n' || ac == ',' || ac == '.')
             return false;
     }
 
@@ -187,58 +116,15 @@ bool isVaild_VaildChar(char c, char ac, bool inexp)
 }
 bool isVaild_InvaildChar(char c)
 {
-    if (c >= 48 && c <= 57 || c == ' ' || c == '-' || c == '+' || c == ',' || c == '.' || c == '\n' ||
-        c == 'e' || c == 'E')
+    if (c >= 48 && c <= 57 || c == ' ' || c == '-' || c == '+' || c == ',' || c == '.' || c == '\n')
         return true;
     return false;
 }
 
-void warning_LosePrecision(string f)
-{
-    if (f.size() > 7)
-    {
-        cout << "(**Warning: Result has been round to seven places because of precision.)\n";
-    }
-}
-bool isVaild_DifferentLen(vector<string> v1, vector<string> v2)
-{
-    if (v1.size() != v2.size())
-    {
-        cout << "**Error: The two vectors' lengths are different and dot product need the same lengths.\n";
-        return false;
-    }
-    return true;
-}
-bool isVaild_NoEnter(char c)
-{
-    if (c == '\n')
-    {
-        cout << "**Error: The vector has no element. Please enter again.\n";
-        return false;
-    }
-    return true;
-}
 //初始化向量
-void initialVector(vector<string> &v, string &sf, char c, bool &iv)
+void initialVector(vector<float> &v, string &sf, char c, bool &iv)
 {
     char tem = getchar();
-    bool inexp = false;
-
-    if (v.empty())
-    {
-        if (!isVaild_NoEnter(tem))
-        {
-            iv = false;
-            return;
-        }
-    }
-
-    if (!(tem >= 48 && tem <= 57) && tem != '-' && tem != '+' && tem != ' ')
-    {
-        cout << "**Error: The first character should be number.Please enter again.\n";
-        iv = false;
-        return;
-    }
 
     do
     {
@@ -250,69 +136,54 @@ void initialVector(vector<string> &v, string &sf, char c, bool &iv)
             tem = afterc;       //由于上面已经getchar了，下一次循环将无法取到这个，因此用tem存
         }
 
-        int vaild = isVaild(c, afterc, inexp);
+        int vaild = isVaild(c, afterc);
         if (vaild == 0)
         {
             if (c != ' ')
             {
                 if (c != ',' && c != '\n')
-                {
                     sf = sf + c;
-                    if (c == 'e' || c == 'E')
-                    {
-                        inexp = true;
-                    }
-                }
                 else
                 {
-                    double e = atof(sf.c_str());
-                    if (e > __FLT_MAX__ || e < -__FLT_MAX__)
-                    {
-                        cout << "Error: There are non-float numbers. Please enter again.\n";
-                        iv = false;
-                        return;
-                    }
-
-                    v.push_back(sf);
+                    const char *element = sf.c_str();
+                    v.push_back(atof(element));
                     sf.clear();
-                    inexp = false;
                 }
             }
         }
         else if (vaild == 1)
         {
-            cout << "**Error: There are invaild characters. Please enter again.\n";
+            cout << "There are invaild characters.\n";
             iv = false;
             return;
         }
         else if (vaild == 2)
         {
-            cout << "**Error: All characters are vaild but there are invaild arrangements. Please enter again.\n";
+            cout << "All characters are vaild but there are invaild arrangements.\n";
             iv = false;
             return;
         }
 
     } while (c != '\n');
-    iv = true;
 }
 
-//运算
-string dotProduct(vector<string> v[])
+string dotProduct(vector<float> v[])
 {
     string sum = "0";
     for (int i = 0; i < v[0].size(); i++)
     {
         sum = result(v[0][i], v[1][i], sum);
+        sum = deleteZorePadding(sum);
     }
 
     return sum;
 }
 
-string result(string f1, string f2, string sum)
+string result(float f1, float f2, string sum)
 {
     //先将两个浮点数乘起来
-    string prenum1 = f1;
-    string prenum2 = f2;
+    string prenum1 = to_string(f1);
+    string prenum2 = to_string(f2);
 
     //预处理所需变量
 
@@ -351,17 +222,16 @@ string result(string f1, string f2, string sum)
     string result = finalprocess('*', num1, num2, numop1, numop2, pposi1, pposi2, ispoint1, ispoint2, afterpoint,
                                  beforepoint, sign1posi, sign2posi, len1, len2, minlen, maxlen, outlen, outcome,
                                  isresultsign);
-    string resultdz = deleteZorePadding(result);
+    // string resultdz = deleteZorePadding(result);
 
     //结果与sum相加
     preprocess(result, sum, num1, num2, numop1, numop2, pposi1, pposi2, ispoint1, ispoint2, afterpoint,
                beforepoint, sign1posi, sign2posi, len1, len2, minlen, maxlen, outlen, outcome, isresultsign);
     addition(numop1, numop2, pposi1, pposi2, ispoint1, ispoint2, afterpoint, beforepoint, sign1posi, sign2posi,
              len1, len2, minlen, maxlen, outlen, outcome, isresultsign);
-    sum = deleteZorePadding(finalprocess('+', num1, num2, numop1, numop2, pposi1, pposi2, ispoint1, ispoint2,
-                                         afterpoint, beforepoint, sign1posi, sign2posi, len1, len2, minlen,
-                                         maxlen, outlen, outcome, isresultsign));
-
+    sum = finalprocess('+', num1, num2, numop1, numop2, pposi1, pposi2, ispoint1, ispoint2, afterpoint,
+                       beforepoint, sign1posi, sign2posi, len1, len2, minlen, maxlen, outlen, outcome,
+                       isresultsign);
     return sum;
 }
 
@@ -1070,13 +940,6 @@ int *substract(int *result, const char *num1, const char *num2, int len1, int le
 
 string deleteZorePadding(string s)
 {
-    // int j = s.length() - 1;
-    // while (s[j] != '.' && j >= 0)
-    // {
-    //     j--;
-    // }
-    // if (j = -1)
-    //     return s;
     int i = s.length() - 1;
     while (s[i] == '0')
     {
@@ -1086,86 +949,4 @@ string deleteZorePadding(string s)
         i--;
 
     return s.substr(0, i + 1);
-}
-
-string scientificSum(string sum)
-{
-    string result;
-    int pointposi = sum.length() - 1; //小数点位置
-    int exp = 0;                      //10的指数大小
-    while (sum[pointposi] != '.' && pointposi >= 0)
-    {
-        pointposi--;
-    }
-    if (pointposi == -1)
-    {
-        exp = sum.length() - 1;
-    }
-    else
-    {
-        exp = pointposi - 1;
-    }
-
-    if (pointposi == -1 && sum.size() <= 7 || pointposi != -1 && sum.size() <= 8)
-    {
-        return sum;
-    }
-    else
-    {
-        string scienstr;
-        int start = (sum[0] == '-' || sum[0] == '+') ? 1 : 0;
-        int lastplace = 0;
-
-        if (pointposi == -1)
-        {
-            exp = sum.length() - 1;
-            scienstr = sum.substr(start, 1) + "." + sum.substr(1 + start, 5);
-            lastplace = start + 6;
-        }
-        else
-        {
-            exp = pointposi - 1;
-            if (pointposi > 5)
-            {
-                scienstr = sum.substr(start, 1) + "." + sum.substr(1 + start, 5);
-                lastplace = start + 7;
-            }
-            else
-            {
-                scienstr = sum.substr(start, 1) + "." + sum.substr(1 + start, pointposi) + sum.substr(pointposi + 1 + start, 5 - pointposi);
-                lastplace = 7 + start;
-            }
-        }
-
-        int roundplacevalue = atoi(to_string(sum[lastplace + 1]).c_str())-48;
-        if (roundplacevalue < 5)
-        {
-            scienstr += sum.substr(lastplace, 1);
-        }
-        else
-        {
-            scienstr += to_string(atoi(sum.substr(lastplace, 1).c_str()) + 1);
-        }
-
-        result = scienstr + "E+" + to_string(exp);
-    }
-    return result;
-}
-
-void randomVector()
-{
-    int number = 1;
-
-    random_device rd;
-    mt19937 gen(rd());
-    uniform_real_distribution<double> time(-__FLT_MAX__, __FLT_MAX__);
-
-    for (int n = 0; n < number; ++n)
-    {
-        cout << time(gen);
-        if (n != number - 1)
-            cout << ",";
-    }
-
-    cout << "\n";
 }
