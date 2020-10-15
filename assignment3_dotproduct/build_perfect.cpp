@@ -9,8 +9,8 @@ using namespace std;
 
 void prompt();
 void help();
-void initialVector(vector<float> &v, string &sf, char c, bool &iv); //初始化向量,不截取字符串再转换成vector，避免空格太多超出字符串长度
-string dotProduct(vector<float> v[]);                               //点积运算
+void initialVector(vector<string> &v, string &sf, char c, bool &iv); //初始化向量,不截取字符串再转换成vector，避免空格太多超出字符串长度
+string dotProduct(vector<string> v[]);                               //点积运算
 
 void preprocess(string &prenum1, string &prenum2, string &num1, string &num2, const char *&numop1,
                 const char *&numop2, int &pposi1, int &pposi2, bool &ispoint1, bool &ispoint2, int &afterpoint,
@@ -30,19 +30,16 @@ int *substract(int *result, const char *num1, const char *num2, int len1, int le
 int *substract(int *result, const char *num1, const char *num2, int len1, int len2, int beforepoint, int afterpoint,
                int sign1, int sign2, int pposi1, int pposi2, bool isnum1afterlong, bool ispoint1, bool ispoint2); //小数减法
 
-string deleteZorePadding(string s);            //消除零后缀
-string scientificSum(string sum);              //最终结果以科学计数法显示，因为精度只有float
-string result(float f1, float f2, string sum); //两向量点积的结果可能过大，需要大数计算
+string deleteZorePadding(string s);              //消除零后缀
+string scientificSum(string sum);                //最终结果以科学计数法显示，因为精度只有float
+string result(string f1, string f2, string sum); //两向量点积的结果可能过大，需要大数计算
 
 //判断是否合法
 int isVaild(char c, char afterc, bool inexp); //初始化向量时判断字符是否为有效字符
 bool isVaild_VaildChar(char c, char ac, bool inexp);
 bool isVaild_InvaildChar(char c);
-bool isVaild_NoEnter(vector<float> v);
-bool isVaild_DifferentLen(vector<float> v1, vector<float> v2);
-void warning_LosePrecision(string f);
-
-void randomVector();
+bool isVaild_NoEnter(vector<string> v);
+bool isVaild_DifferentLen(vector<string> v1, vector<string> v2);
 
 int main()
 {
@@ -63,7 +60,7 @@ int main()
         else if (mode == "\0") //计算
         {
             //用vector存储
-            vector<float> vector[2];
+            vector<string> vector[2];
             vector[0].reserve(1000);
             vector[1].reserve(1000);
 
@@ -111,9 +108,8 @@ int main()
                 time = (double)(nEndTime.QuadPart - nBeginTime.QuadPart) / (double)nFreq.QuadPart; //计算程序执行时间单位为s
                 cout << "(time: " << time * 1000 << "ms)" << endl;
 
-                warning_LosePrecision(sum); //是否丢失精度
                 //输出
-                cout << "-> " << scientificSum(sum) << endl;
+                cout << "-> " <<sum << endl;
             }
         }
         else
@@ -200,7 +196,7 @@ void warning_LosePrecision(string f)
         cout << "(**Warning: Result has been round to at most seven places because of precision.)\n";
     }
 }
-bool isVaild_DifferentLen(vector<float> v1, vector<float> v2)
+bool isVaild_DifferentLen(vector<string> v1, vector<string> v2)
 {
     if (v1.size() != v2.size())
     {
@@ -219,7 +215,7 @@ bool isVaild_NoEnter(char c)
     return true;
 }
 //初始化向量
-void initialVector(vector<float> &v, string &sf, char c, bool &iv)
+void initialVector(vector<string> &v, string &sf, char c, bool &iv)
 {
     char tem = getchar();
     bool inexp = false;
@@ -272,8 +268,12 @@ void initialVector(vector<float> &v, string &sf, char c, bool &iv)
                         iv = false;
                         return;
                     }
+                    if (inexp)
+                    {
+                        sf = to_string(e); //将含科学计数法的string输入转成fixed小数点的double，再转回string，可能精度会丢失
+                    }
 
-                    v.push_back(e);
+                    v.push_back(sf);
                     sf.clear();
                     inexp = false;
                 }
@@ -297,7 +297,7 @@ void initialVector(vector<float> &v, string &sf, char c, bool &iv)
 }
 
 //运算
-string dotProduct(vector<float> v[])
+string dotProduct(vector<string> v[])
 {
     string sum = "0";
     for (int i = 0; i < v[0].size(); i++)
@@ -308,11 +308,11 @@ string dotProduct(vector<float> v[])
     return sum;
 }
 
-string result(float f1, float f2, string sum)
+string result(string f1, string f2, string sum)
 {
     //先将两个浮点数乘起来
-    string prenum1 = to_string(f1);
-    string prenum2 = to_string(f2);
+    string prenum1 = f1;
+    string prenum2 = f2;
 
     //预处理所需变量
 
@@ -1207,22 +1207,4 @@ string scientificSum(string sum)
     }
     delete[] re;
     return result;
-}
-
-void randomVector()
-{
-    int number = 1;
-
-    random_device rd;
-    mt19937 gen(rd());
-    uniform_real_distribution<double> time(-__FLT_MAX__, __FLT_MAX__);
-
-    for (int n = 0; n < number; ++n)
-    {
-        cout << time(gen);
-        if (n != number - 1)
-            cout << ",";
-    }
-
-    cout << "\n";
 }
