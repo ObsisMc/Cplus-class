@@ -1,8 +1,10 @@
-//atof转换对于10的整数倍的计算可能第一位开始丢失精度
+//string
 
 #include <iostream>
 #include <vector>
 #include <windows.h>
+#include <random>
+#include <fstream>
 #include <random>
 
 using namespace std;
@@ -30,8 +32,8 @@ int *substract(int *result, const char *num1, const char *num2, int len1, int le
 int *substract(int *result, const char *num1, const char *num2, int len1, int len2, int beforepoint, int afterpoint,
                int sign1, int sign2, int pposi1, int pposi2, bool isnum1afterlong, bool ispoint1, bool ispoint2); //小数减法
 
-string deleteZorePadding(string s);              //消除零后缀
-string scientificSum(string sum);                //最终结果以科学计数法显示，因为精度只有float
+string deleteZorePadding(string s); //消除零后缀
+
 string result(string f1, string f2, string sum); //两向量点积的结果可能过大，需要大数计算
 
 //判断是否合法
@@ -49,6 +51,7 @@ int main()
 
     do
     {
+        rewind(stdin);
         //询问执行什么
         cout << "*Please choose mode(press Enter to calculate dot product): ";
         string mode;
@@ -57,42 +60,85 @@ int main()
             break;
         else if (mode == "help") //帮助
             help();
-        else if (mode == "\0") //计算
+        else if (mode == "\0" || mode == "random") //计算
         {
-            //用vector存储
-            vector<string> vector[2];
-            vector[0].reserve(1000);
-            vector[1].reserve(1000);
-
-            //初始化vector
-            string strfloat = ""; //存浮点数
-            char c;               //获得的每个字符
-            bool isvaild = true;  //判断是否合法
-
-            do
+            if (mode == "\0")
             {
-                strfloat = "";
-                vector[0].clear();
-                cout << "vector 1 : ";
-                // randomVector(); //生成随机数
-                initialVector(vector[0], strfloat, c, isvaild);
-                rewind(stdin); //除去换行符
-            } while (!isvaild);
+                //用vector存储
+                vector<string> vector[2];
+                vector[0].reserve(1000);
+                vector[1].reserve(1000);
 
-            do
-            {
-                strfloat = "";
-                vector[1].clear();
-                cout << "vector 2 : ";
-                // randomVector(); //生成随机数
-                initialVector(vector[1], strfloat, c, isvaild);
-                rewind(stdin); //除去换行符
-            } while (!isvaild);
+                //初始化vector
+                string strfloat = ""; //存浮点数
+                char c;               //获得的每个字符
+                bool isvaild = true;  //判断是否合法
 
-            //检查向量长度是否一致
-            bool issamelen = isVaild_DifferentLen(vector[0], vector[1]);
-            if (issamelen)
+                do
+                {
+                    strfloat = "";
+                    vector[0].clear();
+                    cout << "vector 1 : ";
+                    // randomVector(); //生成随机数
+                    initialVector(vector[0], strfloat, c, isvaild);
+                    rewind(stdin); //除去换行符
+                } while (!isvaild);
+
+                do
+                {
+                    strfloat = "";
+                    vector[1].clear();
+                    cout << "vector 2 : ";
+                    // randomVector(); //生成随机数
+                    initialVector(vector[1], strfloat, c, isvaild);
+                    rewind(stdin); //除去换行符
+                } while (!isvaild);
+
+                //检查向量长度是否一致
+                bool issamelen = isVaild_DifferentLen(vector[0], vector[1]);
+                if (issamelen)
+                {
+                    double time = 0;
+                    double counts = 0;
+
+                    //计算用时
+                    LARGE_INTEGER nFreq;
+                    LARGE_INTEGER nBeginTime;
+                    LARGE_INTEGER nEndTime;
+                    QueryPerformanceFrequency(&nFreq);
+                    QueryPerformanceCounter(&nBeginTime);                                              //开始计时
+                                                                                                       //计算
+                    string sum = dotProduct(vector);                                                   //...测试代码
+                    QueryPerformanceCounter(&nEndTime);                                                //停止计时
+                    time = (double)(nEndTime.QuadPart - nBeginTime.QuadPart) / (double)nFreq.QuadPart; //计算程序执行时间单位为s
+                    cout << "(time: " << time * 1000 << "ms)" << endl;
+
+                    //输出
+                    cout << "-> " << sum << endl;
+                }
+            }
+            else
             {
+                int number;
+                cin >> number;
+                vector<string> v[2];
+
+                random_device rd;
+                mt19937 gen(rd());
+                float k = __FLT_MAX__;
+                uniform_real_distribution<double> ran(-k, k);
+
+                fstream out("v2200m.dat", ios::out | ios::binary);
+
+                for (int n = 0; n < number; ++n)
+                {
+                    string num = to_string(ran(gen));
+                    double e = atof(num.c_str());
+                    string ele = to_string(e);
+                    v[0].push_back(ele);
+                    v[1].push_back(ele);
+                }
+
                 double time = 0;
                 double counts = 0;
 
@@ -101,22 +147,21 @@ int main()
                 LARGE_INTEGER nBeginTime;
                 LARGE_INTEGER nEndTime;
                 QueryPerformanceFrequency(&nFreq);
-                QueryPerformanceCounter(&nBeginTime);                                              //开始计时
-                                                                                                   //计算
-                string sum = dotProduct(vector);                                                   //...测试代码
-                QueryPerformanceCounter(&nEndTime);                                                //停止计时
-                time = (double)(nEndTime.QuadPart - nBeginTime.QuadPart) / (double)nFreq.QuadPart; //计算程序执行时间单位为s
+                QueryPerformanceCounter(&nBeginTime); //开始计时
+
+                string sum = dotProduct(v);                                                               //...测试代码
+                QueryPerformanceCounter(&nEndTime);                                                       //停止计时
+                 time = (double)(nEndTime.QuadPart - nBeginTime.QuadPart) / (double)nFreq.QuadPart; //计算程序执行时间单位为s
                 cout << "(time: " << time * 1000 << "ms)" << endl;
 
                 //输出
-                cout << "-> " <<sum << endl;
+                cout << "-> " << sum << endl;
             }
         }
         else
         {
             cout << "**Error: Please enter \"help\", \"quit\" or press Enter.\n";
         }
-
     } while (true);
 }
 
@@ -1086,125 +1131,4 @@ string deleteZorePadding(string s)
         i--;
 
     return s.substr(0, i + 1);
-}
-
-string scientificSum(string sum)
-{
-    string result;
-    int pointposi = sum.length() - 1; //小数点位置
-    int exp = 0;                      //10的指数大小
-    int issigned = (sum[0] == '-' ? 1 : 0);
-    char *re;
-    while (sum[pointposi] != '.' && pointposi >= 0)
-    {
-        pointposi--;
-    }
-    if (pointposi == -1)
-    {
-        exp = sum.length() - 1 - issigned;
-    }
-    else
-    {
-        exp = pointposi - 1 - issigned;
-    }
-
-    if (pointposi == -1 && sum.size() <= 7 + issigned || pointposi != -1 && sum.size() <= 8 + issigned)
-    {
-        return sum;
-    }
-    else
-    {
-        string scienstr;
-        int start = (sum[0] == '-' || sum[0] == '+') ? 1 : 0;
-        int lastplace = 0;
-
-        if (pointposi == -1)
-        {
-            scienstr = sum.substr(start, 1) + "." + sum.substr(1 + start, 5);
-            lastplace = start + 6;
-        }
-        else
-        {
-            if (pointposi > 6 + start)
-            {
-                scienstr = sum.substr(start, 1) + "." + sum.substr(1 + start, 5);
-                lastplace = start + 6; //最后一位数
-            }
-            else
-            {
-                scienstr = sum.substr(start, 1) + "." + sum.substr(1 + start, pointposi - 1 - start) + sum.substr(pointposi + 1, 6 - (pointposi - start));
-                lastplace = 6 + start + 1;
-            }
-        }
-
-        int afterlast = (pointposi == lastplace + 1 ? lastplace + 2 : lastplace + 1);
-        if (atoi(to_string(sum[afterlast]).c_str()) - 48 < 5)
-        {
-            scienstr += sum.substr(lastplace, 1);
-        }
-        else
-        {
-            int last = atoi(sum.substr(lastplace, 1).c_str()) + 1;
-            if (last < 10) //未进位
-            {
-                scienstr += to_string(last);
-            }
-            else //进位
-            {
-                const char *preresult = scienstr.c_str();
-                int len = scienstr.length();
-                int r[len] = {0};
-                int m = 1;
-                for (int i = len - 1; i >= 0; i--)
-                {
-                    if (i != 1)
-                    {
-                        int value = scienstr[i] - 48;
-                        int k = (value + m) % 10;
-                        m = (value + m) / 10;
-                        r[i + (i > 1 ? 0 : 1)] = k;
-                    }
-                }
-                if (m == 1)
-                    r[0] = 1;
-
-                int startp = 0;
-                if (r[0] == 0)
-                {
-                    startp = 1;
-                }
-                if (startp == 1)
-                {
-                    re = new char[len + 1];
-                    for (int i = 0; i < len; i++)
-                    {
-                        if (i == 1)
-                        {
-                            re[1] = '.';
-                        }
-                        else
-                        {
-                            int a = r[i + startp - ((i > 1) ? 1 : 0)];
-                            re[i] = a + 48;
-                        }
-                    }
-                    re[len - 1] = r[len - 1] + 48;
-                    re[len] = '\0';
-                }
-                else
-                {
-                    re = new char[2];
-                    re[0] = '1';
-                    re[1] = '\0';
-                    exp++;
-                }
-
-                scienstr = re;
-            }
-        }
-
-        result = (issigned == 1 ? "-" : "") + scienstr + "E+" + to_string(exp);
-    }
-    delete[] re;
-    return result;
 }
