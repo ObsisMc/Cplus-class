@@ -1,6 +1,5 @@
 //直接float计算
 
-
 #include <iostream>
 #include <vector>
 #include <chrono>
@@ -165,10 +164,15 @@ void help()
     cout << "    choose mode status:\n";
     cout << "        \"help\": get help\n";
     cout << "        \"quit\": quit calculator\n";
+    cout << "        \"read\": read binary files to calculate dot product\n";
     cout << "        press Enter: dot product\n";
     cout << "    dot product:\n";
     cout << "        use comma to split each element\n";
     cout << "        press Enter to input another vector\n";
+    cout << "    read mode:\n";
+    cout << "        the first argument: file name of the first vector\n";
+    cout << "        the second argument: file name of the second vector\n";
+    cout << "        the third argument: vectors' length\n";
 }
 
 //检查合法的各种方法

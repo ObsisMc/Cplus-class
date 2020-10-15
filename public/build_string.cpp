@@ -6,6 +6,7 @@
 #include <random>
 #include <fstream>
 #include <random>
+#pragma GCC optimize(3, "Ofast", "inline")
 
 using namespace std;
 
@@ -119,6 +120,7 @@ int main()
             }
             else
             {
+                cout << "Vector's length: ";
                 int number;
                 cin >> number;
                 vector<string> v[2];
@@ -127,8 +129,6 @@ int main()
                 mt19937 gen(rd());
                 float k = __FLT_MAX__;
                 uniform_real_distribution<double> ran(-k, k);
-
-                fstream out("v2200m.dat", ios::out | ios::binary);
 
                 for (int n = 0; n < number; ++n)
                 {
@@ -149,9 +149,9 @@ int main()
                 QueryPerformanceFrequency(&nFreq);
                 QueryPerformanceCounter(&nBeginTime); //开始计时
 
-                string sum = dotProduct(v);                                                               //...测试代码
-                QueryPerformanceCounter(&nEndTime);                                                       //停止计时
-                 time = (double)(nEndTime.QuadPart - nBeginTime.QuadPart) / (double)nFreq.QuadPart; //计算程序执行时间单位为s
+                string sum = dotProduct(v);                                                        //...测试代码
+                QueryPerformanceCounter(&nEndTime);                                                //停止计时
+                time = (double)(nEndTime.QuadPart - nBeginTime.QuadPart) / (double)nFreq.QuadPart; //计算程序执行时间单位为s
                 cout << "(time: " << time * 1000 << "ms)" << endl;
 
                 //输出
@@ -176,10 +176,13 @@ void help()
     cout << "    choose mode status:\n";
     cout << "        \"help\": get help\n";
     cout << "        \"quit\": quit calculator\n";
+    cout << "        \"random\": create random vectors and calculate\n";
     cout << "        press Enter: dot product\n";
     cout << "    dot product:\n";
     cout << "        use comma to split each element\n";
     cout << "        press Enter to input another vector\n";
+    cout << "    random mode:\n";
+    cout << "        argument: vector's length\n";
 }
 
 //检查合法的各种方法
