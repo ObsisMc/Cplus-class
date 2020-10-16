@@ -130,10 +130,10 @@ int main()
                         r1.close();
                         r2.close();
 
-                        vector<float> v[2];
+                        vector<float> v;
                         for(int i=0;i<n;i++)
                         {
-                            v[0].push_back(f[0][i]);
+                            v.push_back(f[0][i]);
                         }
 
                         auto t1 = chrono::steady_clock::now();
