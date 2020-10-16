@@ -64,7 +64,6 @@ int main()
                     strfloat = "";
                     vector[0].clear();
                     cout << "vector 1 : ";
-                    // randomVector(); //生成随机数
                     initialVector(vector[0], strfloat, c, isvaild);
                     rewind(stdin); //除去换行符
                 } while (!isvaild);
@@ -74,7 +73,6 @@ int main()
                     strfloat = "";
                     vector[1].clear();
                     cout << "vector 2 : ";
-                    // randomVector(); //生成随机数
                     initialVector(vector[1], strfloat, c, isvaild);
                     rewind(stdin); //除去换行符
                 } while (!isvaild);

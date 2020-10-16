@@ -15,11 +15,11 @@ long double dotProduct(float *f1, float *f2, int len);              //读文件�
 long double result(float f1, float f2, long double sum);
 
 //判断是否合法
-int isVaild(char c, char afterc, bool inexp); //初始化向量时判断字符是否为有效字符
-bool isVaild_VaildChar(char c, char ac, bool inexp);
-bool isVaild_InvaildChar(char c);
-bool isVaild_NoEnter(vector<float> v);
-bool isVaild_DifferentLen(vector<float> v1, vector<float> v2);
+int isVaild(char c, char afterc, bool inexp);                  //初始化向量时判断输入是否合法
+bool isVaild_VaildChar(char c, char ac, bool inexp);           //在都是有效字符的情况下，判断它们的排列是否合法，如向量 1,,1非法
+bool isVaild_InvaildChar(char c);                              //初始化向量时判断输入的字符是否为 有效字符(数字、逗号、小数点、e、E、+、-)
+bool isVaild_NoEnter(vector<float> v);                         //判断是否为空向量
+bool isVaild_DifferentLen(vector<float> v1, vector<float> v2); //判断向量长度是否一样
 
 int main()
 {
@@ -59,7 +59,6 @@ int main()
                     strfloat = "";
                     vector[0].clear();
                     cout << "vector 1 : ";
-                    // randomVector(); //生成随机数
                     initialVector(vector[0], strfloat, c, isvaild);
                     rewind(stdin); //除去换行符
                 } while (!isvaild);
@@ -69,7 +68,6 @@ int main()
                     strfloat = "";
                     vector[1].clear();
                     cout << "vector 2 : ";
-                    // randomVector(); //生成随机数
                     initialVector(vector[1], strfloat, c, isvaild);
                     rewind(stdin); //除去换行符
                 } while (!isvaild);
