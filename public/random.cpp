@@ -6,10 +6,12 @@ using namespace std;
 
 int main()
 {
-    int number;
-    cin >> number;
     string name;
-    cin>>name;
+    cout<<"Enter the file's name you want (end with \".dat\"): ";
+    cin >> name;
+    int number;
+    cout<<"Enter the length of the vector: ";
+    cin >> number;
     float *data = new float[number];
 
     random_device rd;
