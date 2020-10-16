@@ -126,6 +126,7 @@ int main()
                             cout << "**Error: the number isn't a integer.\n";
                             cin.clear();
                             cin.ignore();
+                            continue;
                         }
 
                         float **f = new float *[2];
