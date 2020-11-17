@@ -94,7 +94,7 @@ double matrix1DTime_3_gap4(matrix1D &A, matrix1D &B, matrix1D &C)
 {
     auto t1 = chrono::steady_clock::now();
     int error = A.row % 4;
-// #pragma omp parallel for
+#pragma omp parallel for
     for (int i = 0; i < A.row - error; i += 4)
     {
         for (int j = 0; j < B.row; j++)
@@ -119,7 +119,7 @@ double matrix1DTime_3_gap4(matrix1D &A, matrix1D &B, matrix1D &C)
         }
     }
 
-// #pragma omp parallel for
+#pragma omp parallel for
     for (int i = A.row - error; i < A.row; i++)
     {
         for (int j = 0; j < B.row; j++)
@@ -140,7 +140,7 @@ double matrix1DTime_3_gap8(matrix1D &A, matrix1D &B, matrix1D &C) //没gap4快
     if (A.row % 8 != 0)
         return -1;
     auto t1 = chrono::steady_clock::now();
-// #pragma omp parallel for
+#pragma omp parallel for
     for (int i = 0; i < A.row; i += 8)
     {
         for (int j = 0; j < B.row; j++)
@@ -272,83 +272,50 @@ double matrix1Dpacking(matrix1D &A, matrix1D &B, matrix1D &C)
     auto diff = chrono::duration<double, std::milli>(t2 - t1).count();
     return diff;
 }
-// double matrix1Dpack_sse(matrix1D &A, matrix1D &B, matrix1D &C)
-// {
-//      if(_Column!=B._Row) return *this;
-//         Matrix tmp(_Row,B._Column,0);
-//         double *ta[2];
-//         ta[0]=(double*)malloc(sizeof(double)*4*_Column);
-//         ta[1]=(double*)malloc(sizeof(double)*4*_Column);
-//         int i(0),j(0),k,t;
-//         do{
-//             k=0;i=0;
-//             do{
-//                 ta[0][k]=_Matrix[i][j];
-//                 ta[1][k++]=_Matrix[i][j+4];
-//                 ta[0][k]=_Matrix[i][j+1];
-//                 ta[1][k++]=_Matrix[i][j+5];
-//                 ta[0][k]=_Matrix[i][j+2];
-//                 ta[1][k++]=_Matrix[i][j+6];
-//                 ta[0][k]=_Matrix[i][j+3];
-//                 ta[1][k++]=_Matrix[i++][j+7];
-//             }while(i<_Column);
-//             i=0;
-//             do{
-//                 multi6kernel(tmp._Matrix,ta,B._Matrix,j,i);
-//                 i+=4;
-//             }while(i<B._Column);
-//             j+=8;
-//         }while(j<_Row);
-//         free(ta[0]);
-//         free(ta[1]);
-//         return tmp;
-// }
-// double matrix1Dmm256(matrix1D &A, matrix1D &B, matrix1D &C)
-// {
-//     if (B.row % 8 != 0)
-//         return -1;
-//     float *pa = A.data;
-//     float *pb = B.data;
-//     __m256 a, b;
-//     __m256 c = _mm256_setzero_ps();
-//     register float res[8] = {0};
+double matrix1Dmm256(matrix1D &A, matrix1D &B, matrix1D &C)
+{
+    if (B.row % 8 != 0)
+        return -1;
+    float *pa = A.data;
+    float *pb = B.data;
+    __m256 a, b;
+    __m256 c = _mm256_setzero_ps();
+    register float res[8] = {0};
 
-//     auto t1 = chrono::steady_clock::now();
-//     #pragma omp parallel for
-//     for (int i = 0; i < A.row; i++)
-//     {
-//         for (int j = 0; j < B.row; j++)
-//         {
-//             float multiplier = A.data[i * A.colnum + j];
-//             a = _mm256_set1_ps(multiplier);//效率低
-//             int begin=j*B.colnum;
-//             for (int k = 0; k < B.colnum; k += 8)//指针最好跟循环计数变量统一，不然增加很多加法
-//             {
+    auto t1 = chrono::steady_clock::now();
+    for (int i = 0; i < A.row; i += 8)
+    {
+        for (int j = 0; j < B.row; j++)
+        {
 
-//                 //  C.data[i * B.colnum + k] += multiplier * B.data[j * B.colnum + k];
-//                 b = _mm256_load_ps(pb+k+begin);
-//                 // a = _mm256_loadu_ps(pa + k);
+            a = _mm256_set_ps(A.data[i * A.row + j], A.data[(i + 1) * A.row + j], A.data[(i + 2) * A.row + j], A.data[(i + 3) * A.row + j],
+                              A.data[(i + 4) * A.row + j], A.data[(i + 5) * A.row + j], A.data[(i + 6) * A.row + j], A.data[(i + 7) * A.row + j]);
+            for (int k = 0; k < B.colnum; k++)
+            {
+                // cout << res[0] << res[1];
+                // float multiplier = A.data[i * A.colnum + j];
+                //  C.data[i * B.colnum + k] += multiplier * B.data[j * B.colnum + k];
+                b = _mm256_set1_ps(B.data[j * B.colnum + k]);
+                // a = _mm256_loadu_ps(pa + k);
 
-//                 _mm256_store_ps(res, _mm256_mul_ps(a, b));
+                _mm256_storeu_ps(res, _mm256_mul_ps(a, b));
 
-//                 // cout << res[0]<<endl;
-//                 // cout<<pb<<endl;
-//                 // C.data[i * C.colnum + j] += res[0] + res[1] + res[2] + res[3] + res[4] + res[5] + res[6] + res[7];
-//                 C.data[i * C.colnum + k] += res[0];
-//                 C.data[i * C.colnum + k + 1] += res[1];
-//                 C.data[i * C.colnum + k + 2] += res[2];
-//                 C.data[i * C.colnum + k + 3] += res[3];
-//                 C.data[i * C.colnum + k + 4] += res[4];
-//                 C.data[i * C.colnum + k + 5] += res[5];
-//                 C.data[i * C.colnum + k + 6] += res[6];
-//                 C.data[i * C.colnum + k + 7] += res[7];
-//             }
-//         }
-//     }
-//     auto t2 = chrono::steady_clock::now();
-//     auto diff = chrono::duration<double, std::milli>(t2 - t1).count();
-//     return diff;
-// }
+                // C.data[i * C.colnum + j] += res[0] + res[1] + res[2] + res[3] + res[4] + res[5] + res[6] + res[7];
+                C.data[i * C.colnum + k] += res[0];
+                C.data[(i + 1) * C.colnum + k] += res[1];
+                C.data[(i + 2) * C.colnum + k] += res[2];
+                C.data[(i + 3) * C.colnum + k] += res[3];
+                C.data[(i + 4) * C.colnum + k] += res[4];
+                C.data[(i + 5) * C.colnum + k] += res[5];
+                C.data[(i + 6) * C.colnum + k] += res[6];
+                C.data[(i + 7) * C.colnum + k] += res[7];
+            }
+        }
+    }
+    auto t2 = chrono::steady_clock::now();
+    auto diff = chrono::duration<double, std::milli>(t2 - t1).count();
+    return diff;
+}
 double matrix1DTime_Gap(matrix1D &A, matrix1D &B, matrix1D &C)
 {
     auto t1 = chrono::steady_clock::now();
@@ -471,6 +438,7 @@ double matrix2DTime_Para(matrix2D &A, matrix2D &B, matrix2D &C)
 {
 
     auto t1 = chrono::steady_clock::now();
+#pragma omp parallel for
     for (int i = 0; i < A.row; i++)
     {
         for (int j = 0; j < B.colnum; j++)
@@ -554,124 +522,3 @@ void multi4kernel(matrix1D &C, matrix1D &A, float **b, int brow, int row, int co
     C.data[col + 2 + (row + 3) * C.colnum] = t14;
     C.data[col + 3 + (row + 3) * C.colnum] = t15;
 }
-// double matrix1Dmm256(matrix1D &A, matrix1D &B, matrix1D &C)
-// {
-//     transpose(B);
-//     if (B.row % 8 != 0)
-//         return -1;
-//     // float af[A.row * A.colnum];
-//     // float bf[B.row * B.colnum];
-
-//     // for (int i = 0; i < A.row * A.colnum; i++)
-//     // {
-//     //     af[i]=A.data[i];
-//     // }
-//     //  for (int i = 0; i < B.row * B.colnum; i++)
-//     // {
-//     //     bf[i]=B.data[i];
-//     // }
-//     float *pa = A.data;
-//     float *pb = B.data;
-//     __m256 a, b;
-//     __m256 c = _mm256_setzero_ps();
-//     float res[8] = {0};
-
-//     auto t1 = chrono::steady_clock::now();
-//     for (int i = 0; i < A.row; i++)
-//     {
-//         for (int j = 0; j < B.colnum; j++)
-//         {
-//             // float multiplier = A.data[i * A.colnum + j];
-//             for (int k = 0; k < B.row; k += 8, pa += 8, pb += 8)
-//             {
-//                 cout << res[0] << res[1];
-//                 //  C.data[i * B.colnum + k] += multiplier * B.data[j * B.colnum + k];
-//                 b = _mm256_loadu_ps(pb + k);
-//                 a = _mm256_loadu_ps(pa + k);
-//                 c = _mm256_add_ps(c, _mm256_mul_ps(a, b));
-//                 _mm256_storeu_ps(res, c);
-
-//                 C.data[i * C.colnum + j] += res[0] + res[1] + res[2] + res[3] + res[4] + res[5] + res[6] + res[7];
-//             }
-//         }
-//     }
-//     auto t2 = chrono::steady_clock::now();
-//     auto diff = chrono::duration<double, std::milli>(t2 - t1).count();
-//     return diff;
-// }
-
-// double matrix1Dmm256(matrix1D &A, matrix1D &B, matrix1D &C)
-// {
-//     if (B.row % 8 != 0)
-//         return -1;
-//     float *pa = A.data;
-//     float *pb = B.data;
-//     __m256 a, b;
-//     __m256 c = _mm256_setzero_ps();
-//     register float res[8] = {0};
-
-//     auto t1 = chrono::steady_clock::now();
-//     for (int i = 0; i < A.row; i += 8)
-//     {
-//         for (int j = 0; j < B.row; j++)
-//         {
-
-//             a = _mm256_set_ps(A.data[i * A.row + j], A.data[(i + 1) * A.row + j], A.data[(i + 2) * A.row + j], A.data[(i + 3) * A.row + j],
-//                               A.data[(i + 4) * A.row + j], A.data[(i + 5) * A.row + j], A.data[(i + 6) * A.row + j], A.data[(i + 7) * A.row + j]);
-//             for (int k = 0; k < B.colnum; k++)
-//             {
-//                 // cout << res[0] << res[1];
-//                 // float multiplier = A.data[i * A.colnum + j];
-//                 //  C.data[i * B.colnum + k] += multiplier * B.data[j * B.colnum + k];
-//                 b = _mm256_set1_ps(B.data[j * B.colnum + k]);
-//                 // a = _mm256_loadu_ps(pa + k);
-
-//                 _mm256_storeu_ps(res, _mm256_mul_ps(a, b));
-
-//                 // C.data[i * C.colnum + j] += res[0] + res[1] + res[2] + res[3] + res[4] + res[5] + res[6] + res[7];
-//                 C.data[i * C.colnum + k] += res[0];
-//                 C.data[(i + 1) * C.colnum + k] += res[1];
-//                 C.data[(i + 2) * C.colnum + k] += res[2];
-//                 C.data[(i + 3) * C.colnum + k] += res[3];
-//                 C.data[(i + 4) * C.colnum + k] += res[4];
-//                 C.data[(i + 5) * C.colnum + k] += res[5];
-//                 C.data[(i + 6) * C.colnum + k] += res[6];
-//                 C.data[(i + 7) * C.colnum + k] += res[7];
-//             }
-//         }
-//     }
-//     auto t2 = chrono::steady_clock::now();
-//     auto diff = chrono::duration<double, std::milli>(t2 - t1).count();
-//     return diff;
-// }
-
-// double matrix1Dmm256(matrix1D &A, matrix1D &B, matrix1D &C)
-// {
-
-//         float *ta[2];
-//         ta[0]=new float[B.row];
-//         ta[1]=(double*)malloc(sizeof(double)*4*_Column);
-//         int i(0),j(0),k,t;
-//         do{
-//             k=0;i=0;
-//             do{
-//                 ta[0][k]=_Matrix[i][j];
-//                 ta[1][k++]=_Matrix[i][j+4];
-//                 ta[0][k]=_Matrix[i][j+1];
-//                 ta[1][k++]=_Matrix[i][j+5];
-//                 ta[0][k]=_Matrix[i][j+2];
-//                 ta[1][k++]=_Matrix[i][j+6];
-//                 ta[0][k]=_Matrix[i][j+3];
-//                 ta[1][k++]=_Matrix[i++][j+7];
-//             }while(i<_Column);
-//             i=0;
-//             do{
-//                 multi6kernel(tmp._Matrix,ta,B._Matrix,j,i);
-//                 i+=4;
-//             }while(i<B._Column);
-//             j+=8;
-//         }while(j<_Row);
-//         free(ta[0]);
-//         free(ta[1]);
-//         return tmp;
-// }
