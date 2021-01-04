@@ -1,25 +1,30 @@
 #include <opencv2/opencv.hpp>
+#include <iostream>
+#include <chrono>
 #include <cmath>
+#include <fstream>
+//#pragma GCC optimize(2)
+
 using namespace cv;
 using namespace std;
 
+//数据
 typedef struct conv_param
 {
-	int pad;
-	int stride;
-	int kernel_size;
-	int in_channels;
-	int out_channels;
-	float *p_weight;
-	float *p_bias;
+    int pad;
+    int stride;
+    int kernel_size;  //每一层的大小
+    int in_channels;  //每个核通道数
+    int out_channels; //核的数量
+    float *p_weight;
+    float *p_bias;
 } conv_param;
-
 typedef struct fc_param
 {
-	int in_features;
-	int out_features;
-	float *p_weight;
-	float *p_bias;
+    int in_features;
+    int out_features;
+    float *p_weight;
+    float *p_bias;
 } fc_param;
 
 float conv0_weight[16 * 3 * 3 * 3] = {0.39464307f, 0.31125212f, -0.113536164f, 0.30107704f, 0.40669382f, 0.42162737f, 0.21860032f, -0.13719831f, -0.2722659f, -0.3841937f, -0.72105736f, -0.58308995f, -0.48366326f, -0.28575644f, -0.05651677f, -0.53083885f, -0.77037054f, -0.7629983f, 0.025733506f, 0.12633972f, -0.17480506f, 0.21570784f, 0.21041252f, -0.100641824f, 0.27207935f, -0.3632402f, -0.25211236f, -0.3779639f, -0.28126734f, -0.099892944f, -0.29411986f, -0.352513f, -0.27488035f, 0.07936121f, -0.11976181f, -0.09621229f, -0.29249555f, -0.35626453f, -0.089926735f, -0.30967128f, -0.45575193f, -0.18596205f, 0.0046898457f, 0.07736333f, 0.11418518f, 0.049611814f, -0.1174234f, -0.061348002f, -0.17694806f, -0.23101062f, -0.01014731f, 0.10893406f, -0.033674054f, 0.055747885f, -0.7857677f, -0.43438435f, -0.23328306f, -0.7045561f, -1.0594592f, -0.96986556f, -0.4306335f, -0.49769416f, -0.38025817f, 0.743165f, 0.39787427f, 0.70530725f, 0.14347716f, 0.31259444f, 0.2433205f, 0.6502008f, 0.17526624f, -0.21967348f, 0.3032335f, 0.6659125f, 0.32520002f, 0.25262007f, 0.21478127f, -0.25885805f, 0.5798695f, 0.10853558f, 0.5885381f, -0.66717565f, -2.0332286f, -2.0057657f, 2.6963172f, 0.49773622f, 1.189053f, 0.8569126f, -0.5478645f, -0.5474117f, -0.38225102f, -0.10105263f, -0.7386174f, 2.0439014f, 1.4866843f, 0.50445044f, -0.5007768f, -1.8825145f, -0.70317525f, -0.8941499f, -0.75519013f, 1.0137452f, -0.21174146f, 1.5843949f, 2.470182f, -2.3377092f, -2.20756f, -0.7657903f, 0.11595148f, -0.029040033f, 0.7682127f, 0.38493067f, 1.1514106f, 1.0909537f, -1.0764828f, -1.1670347f, 0.029069614f, -0.877457f, 0.5579421f, 1.1665275f, -0.18994229f, 0.7673296f, 0.74027365f, -1.4748354f, -1.5412221f, -0.6860829f, -0.18105343f, 0.068953045f, 1.2358037f, -0.5324052f, -0.14725618f, 1.4631968f, -1.3702732f, -0.7870854f, 0.98745936f, 0.26478675f, 0.3556826f, 0.104706556f, 0.25831616f, 0.58448446f, 0.37813473f, 0.0707449f, 0.23480041f, 0.23432183f, -0.0130122695f, 0.1177902f, 0.14724356f, 0.04454773f, 0.30134895f, 0.034679458f, 0.10438265f, 0.080957696f, 0.04673539f, 0.000114658316f, 0.11621634f, -0.061609983f, 0.13820495f, 0.06610005f, 0.024520641f, 0.103318214f, 0.17039937f, -0.07025218f, -0.6798553f, -1.3538299f, -0.82105464f, 2.2388427f, 0.52264774f, -0.36318606f, -1.4912193f, 1.1072139f, 0.33895338f, -1.7142519f, 0.5416925f, -1.0977235f, 1.6462898f, 0.90318096f, 0.94332093f, -1.8965774f, 0.7349083f, -2.4249914f, -1.6165315f, 1.7934322f, 0.48784658f, -0.15854074f, 0.78907776f, 0.014245147f, -2.945607f, 0.5394235f, -0.4857813f, -0.054304346f, -0.3152643f, -0.06946454f, -0.11268508f, -0.17926472f, -0.20574911f, -0.07990353f, -0.49118677f, -0.025087593f, 0.19014266f, -0.18238616f, -0.059863616f, 0.2252154f, -0.17008233f, 0.26245677f, 0.29177034f, -0.2754409f, 0.30317858f, -0.026542168f, -0.56722933f, -0.11456274f, -0.067640044f, -0.10235165f, -0.12649953f, -0.36027682f, -0.49318066f, -0.20856257f, -0.10553966f, 0.14529943f, 0.31293455f, -0.6343524f, -0.41135284f, -0.22918832f, -0.3269688f, -0.4666978f, -0.14151694f, 0.047637857f, 0.3689984f, 0.54759896f, -0.7058803f, -0.5644361f, 0.13388251f, -0.34838295f, -0.7413975f, -0.38709667f, 0.25354767f, -0.007902776f, 0.33674595f, -0.0746156f, -0.27811626f, -0.110156484f, -0.2025166f, -0.2381966f, -0.021202441f, 0.8231694f, -0.6653018f, -1.2321107f, 0.8115323f, -0.122332565f, -1.0530983f, 0.45618296f, 0.102331914f, 0.033566006f, 0.85834605f, -0.29432422f, -1.2657924f, 0.9141286f, -0.3266094f, -0.7053741f, 0.81276864f, 0.07665286f, -0.5127557f, 0.14322002f, -0.7193492f, -0.338985f, 0.97604406f, -0.105564944f, -0.19280234f, 0.526181f, 0.3487025f, -0.12819663f, -0.15909345f, -0.10290787f, -0.5248588f, 0.48928633f, 1.0575275f, 0.14167315f, 0.83029175f, 1.1101023f, 0.5940608f, -0.01074784f, -0.723216f, -0.7768869f, 0.98885226f, 0.54384017f, -0.703233f, 0.63482726f, -0.07262965f, -0.61900723f, 0.4230914f, -0.51311386f, -0.7291202f, 0.27294713f, 0.10586888f, -0.5550978f, 0.22313671f, 0.7238348f, -0.4494153f, 0.29698962f, 0.56095773f, 0.31671995f, 0.17024502f, 0.38235816f, 0.25565818f, -0.1672302f, 0.3076467f, -0.01307815f, 0.14418042f, 0.56610113f, 0.2148333f, 0.15399817f, 0.67229635f, 0.13392828f, 0.20211038f, 0.31115752f, 0.0095776105f, -0.19347395f, 0.015239959f, -0.07266435f, -0.21352863f, -0.048559375f, -0.19423409f, -0.29441926f, -0.21786705f, -0.13871895f, 0.13560575f, -0.2710085f, -0.7794796f, -0.62922764f, -0.96720576f, -1.7171217f, -0.86367893f, -1.268142f, -0.39895812f, 0.55501527f, 0.5426243f, 1.0501138f, 1.3332919f, 1.0797073f, 0.6276182f, 1.3336443f, 0.89330786f, 0.79221326f, -0.031759303f, 0.6283158f, -0.8274064f, -0.26828262f, 0.5890328f, -0.6915631f, 0.29678676f, 0.12777342f, -0.4851606f, -0.21372864f, -0.30243278f, -0.057936516f, -0.22304212f, -0.5086857f, -0.36543858f, 0.061323658f, -0.058094397f, -0.2603215f, -0.04734044f, -0.12903345f, 0.1044603f, -0.17583425f, -0.2569909f, -0.29177812f, 0.011159535f, -0.11316811f, -0.15704016f, -0.112502016f, 0.076443285f, 0.08122089f, -0.00030651398f, -0.19409938f, -0.18510209f, 0.097724915f, -0.13614564f, -0.11792337f, 0.6576927f, -1.0175071f, -0.65340555f, -0.5979028f, 1.1775038f, 0.5222899f, -0.8214336f, 1.736255f, -0.8586219f, -0.79329425f, 0.17091788f, -0.011192297f, -1.8893261f, -0.5987776f, -0.99274975f, -0.58744484f, 1.0230196f, -1.8118623f, 1.0436924f, 0.34172526f, 0.7626623f, 0.16033667f, 0.20234789f, -0.21112663f, -0.40952432f, 2.2407742f, -1.4594872f, -3.1228063f, -3.9376194f, 2.432453f, 1.2279854f, -0.13547976f, -3.1744912f, 1.8420978f, -2.0824459f, 4.346323f, -0.10367142f, -3.9673567f, 2.7665029f, 4.8321104f, 0.17018299f, 0.5056449f, -1.5576425f, -2.362877f, 4.7744937f, 0.57975817f, -2.178875f, 3.423763f, 5.2192326f, 2.6792204f, -4.330439f, -2.3420188f, -6.791226f, 0.863587};
@@ -35,392 +40,380 @@ float fc0_weight[2 * 2048] = {0.029426228f, 0.055579487f, 0.05933608f, -0.021966
 float fc0_bias[2] = {-0.0040076836f, 0.00010113005};
 
 conv_param conv_params[3] = {
-	{1, 2, 3, 3, 16, conv0_weight, conv0_bias},
-	{0, 1, 3, 16, 32, conv1_weight, conv1_bias},
-	{1, 2, 3, 32, 32, conv2_weight, conv2_bias}};
+    {1, 2, 3, 3, 16, conv0_weight, conv0_bias},
+    {0, 1, 3, 16, 32, conv1_weight, conv1_bias},
+    {1, 2, 3, 32, 32, conv2_weight, conv2_bias}};
 fc_param fc_params[1] = {
-	{2048, 2, fc0_weight, fc0_bias}};
+    {2048, 2, fc0_weight, fc0_bias}};
 
-class Matrix
+class Matrix //自定义矩阵
 {
 public:
-	string name;
-	string fromname;
-	float *data;
-	int row;
-	int column;
-	int channel;
-	int *refcount;
-	static int matrixnumber;
+    float *data;
+    int row;
+    int column;
+    int channel;
+    int *refcount;
 
-	Matrix();
-	Matrix(string s);
-	Matrix(int row, int column, int channel);
-	Matrix(int row, int column, int channel, string s);
-	Matrix(const Matrix &m);
-	Matrix &operator=(const Matrix &m);
-	Matrix operator*(const Matrix &m) const;
-	Matrix operator+(const Matrix &m) const;
-	Matrix operator-(const Matrix &m) const;
-	friend Matrix operator*(float f, Matrix &m);
-	friend Matrix operator*(Matrix &m, float f);
-	friend ostream &operator<<(ostream &os, const Matrix &m);
-	friend Matrix &operator>>(Matrix &m1, Matrix &m2);
-	void show();
-	~Matrix();
-};																		//标准矩阵
-void RGB(Mat &m);														//BGR->RGB
-Matrix normalize(Mat &m);												//标准化
-Matrix conv(conv_param c_p, Matrix &m, float *conv_weight, float *bias) //卷积
-{
-
-	int out_channels = c_p.out_channels;					   //输出通道数
-	int in_channels = c_p.in_channels;						   //输入核数
-	int out_size = (m.row - c_p.kernel_size) / c_p.stride + 1; //输出行列数
-	int in_size = c_p.kernel_size;							   //输入行列数
-	int in_totalsize = in_size * in_size;					   //每个通道输入的元素个数
-	int out_total = out_size * out_size;
-	Matrix newm(out_size, out_size, out_channels);
-
-	//核
-	float **kernel = new float *[out_channels];
-	for (int i = 0; i < out_channels; i++)
-	{
-		kernel[i] = new float[in_totalsize * in_channels];
-	}
-
-	float *bias_oi = new float[out_channels];
-	for (int o = 0; o < out_channels; ++o)
-	{
-		for (int i = 0; i < in_channels; ++i)
-		{
-			int begin = i * in_totalsize;
-			// weights
-			kernel[o][begin] = conv_weight[o * (in_channels * 3 * 3) + i * (3 * 3) + 0];
-			kernel[o][begin + 1] = conv_weight[o * (in_channels * 3 * 3) + i * (3 * 3) + 1];
-			kernel[o][begin + 2] = conv_weight[o * (in_channels * 3 * 3) + i * (3 * 3) + 2];
-			kernel[o][begin + 3] = conv_weight[o * (in_channels * 3 * 3) + i * (3 * 3) + 3];
-			kernel[o][begin + 4] = conv_weight[o * (in_channels * 3 * 3) + i * (3 * 3) + 4];
-			kernel[o][begin + 5] = conv_weight[o * (in_channels * 3 * 3) + i * (3 * 3) + 5];
-			kernel[o][begin + 6] = conv_weight[o * (in_channels * 3 * 3) + i * (3 * 3) + 6];
-			kernel[o][begin + 7] = conv_weight[o * (in_channels * 3 * 3) + i * (3 * 3) + 7];
-			kernel[o][begin + 8] = conv_weight[o * (in_channels * 3 * 3) + i * (3 * 3) + 8];
-			// bias
-			bias_oi[o] = bias[o];
-		}
-	}
-
-	//卷积
-
-	for (int out_ch = 0; out_ch < out_channels; out_ch++)
-	{
-		int move = 0;
-		for (int i = 0; i < out_total; i++)
-		{
-			float sum = 0;
-			int moverow = move / out_size;
-			int movecol = move % out_size;
-			for (int in_ele = 0; in_ele < in_totalsize; in_ele++) //核中weight改变
-			{
-				for (int in = 0; in < in_channels; in++) //先每一层算
-				{
-					int mchannel = in * m.row * m.column;
-					int row = moverow + in_ele / in_size;
-					int col = movecol + in_ele % in_size;
-					sum += kernel[out_ch][in * in_totalsize + in_ele] * m.data[mchannel + row * m.column + col];
-				}
-			}
-			newm.data[out_ch * out_total + i] = sum + bias_oi[out_ch]; //计算一层
-			move += c_p.stride;
-		}
-	}
-
-	delete[] bias_oi;
-	for (int i = 0; i < out_channels; i++)
-	{
-		delete[] kernel[i];
-	}
-	delete[] kernel;
-
-	return newm;
-};
-Matrix pad(Matrix &m, conv_param &c_p)
-{
-	int pad = c_p.pad;
-	Matrix newm(m.row + pad * 2, m.column + pad * 2, m.channel);
-	for (int c = 0; c < m.channel; c++)
-	{
-		for (int i = pad; i < m.row + pad; i++)
-		{
-			for (int j = pad; j < m.column + pad; j++)
-			{
-				newm.data[c * newm.column * newm.row + i * newm.column + j] = m.data[c * m.column * m.row + (i - pad) * m.column + j - pad];
-			}
-		}
-	}
-
-	return newm;
-};
-Matrix &RLU(Matrix &m)
-{
-	for (int c = 0; c < m.channel; c++)
-	{
-		for (int i = 0; i < m.row; i++)
-		{
-			for (int j = 0; j < m.column; j++)
-			{
-				if (m.data[c * m.column * m.row + i * m.column + j] < 0)
-					m.data[c * m.column * m.row + i * m.column + j] = 0;
-			}
-		}
-	}
-
-	return m;
-};
-Matrix maxpool(Matrix &m)
-{
-	int r = m.row;
-	int c = m.column;
-	Matrix newm(r / 2, c / 2, m.channel);
-	int newchannelgap = newm.row * newm.column;
-	int channelgap = r * c;
-	for (int ch = 0; ch < m.channel; ch++)
-	{
-		for (int i = 0; i < r; i += 2)
-		{
-			for (int j = 0; j < c; j += 2)
-			{
-
-				int max = m.data[ch * channelgap + i * c + j] > m.data[ch * channelgap + i * c + j + 1] ? m.data[ch * channelgap + i * c + j] : m.data[ch * channelgap + i * c + j + 1];
-				max = m.data[ch * channelgap + (i + 1) * c + j] > max ? m.data[ch * channelgap + (i + 1) * c + j] : max;
-				max = m.data[ch * channelgap + (i + 1) * c + j + 1] > max ? m.data[ch * channelgap + (i + 1) * c + j + 1] : max;
-				cout << ch * newchannelgap + i / 2 * r / 2 + j / 2 << endl;
-				newm.data[ch * newchannelgap + i / 2 * r / 2 + j / 2] = max;
-			}
-		}
-	}
-	return newm;
-}
-Matrix conv_layer(conv_param c_p, Matrix &m, float *conv_weight, float *bias)
-{
-	Matrix padm(pad(m, c_p));
-	Matrix convm(c_p, padm, conv_weight, bias);
-	RLU(convm);
-	return maxpool(convm);
-}
-
-Matrix fc(Matrix &input)
-{
-	input.row = input.row * input.column * input.channel;
-	input.column = 1;
-	int arow = 2;
-	int acol = input.row;
-	Matrix newmatrix(2, 1, 1);
-
-	for (int i = 0; i < arow; i++)
-	{
-		for (int j = 0; j < acol; j++)
-		{
-			for (int k = 0; k < input.row; k++)
-			{
-				newmatrix.data[i * acol + j] = input[k * input.column + j] * fc0_weight[i * acol + k];
-			}
-		}
-	}
-	for (int i = 0; i < newmatrix.row; i++)
-	{
-		newmatrix.data[i] += fc0_bias[i];
-	}
-
-	return newmatrix;
-}
-float *softmax(Matrix &fc)
-{
-	float *p = new float[fc.row];
-	float sum = 0;
-	for (int i = 0; i < fc.row; i++)
-	{
-		sum += exp(fc.data[i]);
-	}
-
-	for (int i = 0; i < fc.row; i++)
-	{
-		p[i] = exp(fc.data[i]) / sum;
-	}
-
-	return p;
-}
-float *fc_layer(Matrix &m)
-{
-	float *p = softmax(fc(m));
-	return p;
-}
+    Matrix();
+    Matrix(int row, int column, int channel);
+    Matrix(const Matrix &m);
+    ~Matrix();
+};                                            //标准矩阵
+void RGB(Mat &m);                             //BGR->RGB
+Matrix normalize(Mat &m);                     //标准化
+Matrix pad(Matrix &m, conv_param &c_p);       //padding
+Matrix conv(conv_param c_p, Matrix &m);       //conv
+Matrix &RLU(Matrix &m);                       //ReLU
+Matrix conv_layer(conv_param c_p, Matrix &m); //convolutional layer
+Matrix maxpool(Matrix &m);                    //maxpool
+Matrix fc(Matrix &input);                     //fc
+float *softmax(Matrix &fc);                   //softmax
+float image_recongize(string imagename);
 
 int main()
 {
-	ios::sync_with_stdio(0);
-	cin.tie(0);
-	cout.tie(0);
+    ios::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
 
-	Mat image = imread("face.jpg", IMREAD_COLOR);
-	// imshow("mypictrue", image);
-	// waitKey(0);
+    string image = "face.jpg";
+    float sum = 0;
 
-	// int c = image.cols;
-	// int r = image.rows;
-	// //cout << image.at<Vec3b>(100, 100);
-	RGB(image);
-	//标准化
-	Matrix norm1(normalize(image));
-	// //cout << norm1.data[0] << " " << norm1.data[1] << " " << norm1.data[2] << " " << endl;
 
-	float **conv_kernel = new float *[3];
-	conv_kernel[0] = conv0_weight;
-	conv_kernel[1] = conv1_weight;
-	conv_kernel[2] = conv2_weight;
+    //测试用代码
+    // int testtime = 500;
+    // ofstream out("test.txt");
+    // for (int i = 0; i < testtime; i++)
+    // {
+    //     printf("loading %s\n-------------------\n", image.c_str());
+    //     float result = image_recongize(image);
+    //     out << result << " ";
+    //     sum += result;
+    // }
+    // cout << sum / testtime;
+    // out << "\n--------average: " << sum / testtime;
 
-	float **bias = new float *[3];
-	bias[0] = conv0_bias;
-	bias[1] = conv1_bias;
-	bias[2] = conv2_bias;
-	//卷积
-	Matrix conv1(conv_layer(conv_params[0], norm1, conv_kernel[0], bias[0]));
-	Matrix conv2(conv_layer(conv_params[1], conv1, conv_kernel[1], bias[1]));
-	Matrix conv3(conv_layer(conv_params[2], norm2, conv_kernel[2], bias[2]));
+    //正常输出代码
+    printf("loading %s\n-------------------\n", image.c_str());
+    image_recongize(image);
+}
 
-	//fc
-	float *p = fc_layer(conv3);
-	cout<<p[0]<<" "<<p[1];
-	//cout << conv1.data[0] << " " << conv1.data[1] << " " << conv1.data[2] << " " << endl;
-	//cout << conv1.row<<" "<<conv1.column<<endl ;
+float image_recongize(string imagename)
+{
+    auto t1 = chrono::steady_clock::now();
+    Mat image = imread(imagename, IMREAD_COLOR);
+    //转RGB
+    //RGB(image);
+    //标准化
+    Matrix norm1(normalize(image));
 
-	//delete[] conv_kernel[0];
-	//delete[] conv_kernel[1];
-	//delete[] conv_kernel[2];
-	//delete[] conv_kernel;
+    //预处理卷积数据
+    float **conv_kernel = new float *[3];
+    conv_kernel[0] = conv0_weight;
+    conv_kernel[1] = conv1_weight;
+    conv_kernel[2] = conv2_weight;
+    float **bias = new float *[3];
+    bias[0] = conv0_bias;
+    bias[1] = conv1_bias;
+    bias[2] = conv2_bias;
 
-	//delete[] bias[0];
-	//delete[] bias[1];
-	//delete[] bias[2];
-	//delete[] bias;
+    //第一次卷积
+    Matrix conv1_conv(conv_layer(conv_params[0], norm1));
+    Matrix conv1_maxpool(maxpool(conv1_conv));
+    //第二次卷积
+    Matrix conv2_conv(conv_layer(conv_params[1], conv1_maxpool));
+    Matrix conv2_maxpool(maxpool(conv2_conv));
+    //第三次卷积
+    Matrix conv3_conv(conv_layer(conv_params[2], conv2_maxpool));
+
+    //全连接
+    Matrix f(fc(conv3_conv));
+    float *p = softmax(f);
+
+    auto t2 = chrono::steady_clock::now();
+    auto diff = chrono::duration<double, std::milli>(t2 - t1).count();
+    //输出
+    cout << "bg probability: " << p[0] << endl
+         << "face probability: "
+         << " " << p[1] << endl;
+    cout << "(time: " << diff << "ms)\n";
+
+    return diff;
 }
 
 void RGB(Mat &m)
 {
-	Mat newmat = m.clone();
-	int row = m.rows;
-	int col = m.cols;
-	for (int i = 0; i < row; i++)
-	{
-		for (int j = 0; j < col; j++)
-		{
-			auto tem = m.at<Vec3b>(i, j)[0];
-			m.at<Vec3b>(i, j)[0] = m.at<Vec3b>(i, j)[2];
-			m.at<Vec3b>(i, j)[2] = tem;
-		}
-	}
+    int row = m.rows;
+    int col = m.cols;
+    for (int i = 0; i < row; i++)
+    {
+        for (int j = 0; j < col; j++)
+        {
+            auto tem = m.at<Vec3b>(i, j)[0];
+            m.at<Vec3b>(i, j)[0] = m.at<Vec3b>(i, j)[2];
+            m.at<Vec3b>(i, j)[2] = tem;
+        }
+    }
 };
 Matrix normalize(Mat &m)
 {
-	int r = m.rows;
-	int c = m.cols;
-	int channel = m.channels();
-	Matrix ma(r, c, channel);
+    int r = m.rows;
+    int c = m.cols;
+    int channel = m.channels();
+    Matrix ma(r, c, channel);
 
-	int channelgap = r * c;
-	int rowgap = c;
-	for (int i = 0; i < r; i++)
-	{
-		for (int j = 0; j < c; j++)
-		{
-			ma.data[i * rowgap + j] = float(m.at<Vec3b>(i, j)[0]) / 255;
-			ma.data[channelgap + i * rowgap + j] = float(m.at<Vec3b>(i, j)[1]) / 255;
-			ma.data[2 * channelgap + i * rowgap + j] = float(m.at<Vec3b>(i, j)[2]) / 255;
-		}
-	}
-
-	return ma;
+    int channelgap = r * c;
+    int rowgap = c;
+    for (int k = 0; k < channel; k++)
+    {
+        for (int i = 0; i < r; i++)
+        {
+            for (int j = 0; j < c; j++)
+            {
+                //ma.data[k * channelgap + i * rowgap + j] = float(m.at<Vec3b>(i, j)[k]) / 255;
+                ma.data[k * channelgap + i * rowgap + j] = float(m.at<Vec3b>(i, j)[2 - k]) / 255;
+            }
+        }
+    }
+    return ma;
 };
+Matrix conv(conv_param c_p, Matrix &m)
+{
 
-int Matrix::matrixnumber = 0;
+    int out_channels = c_p.out_channels;                       //输出通道数
+    int in_channels = c_p.in_channels;                         //核的通道数
+    int out_size = (m.row - c_p.kernel_size) / c_p.stride + 1; //输出行列数
+    int in_size = c_p.kernel_size;                             //输入行列数
+    int in_totalsize = in_size * in_size;                      //输入的核的每个通道的元素个数
+    int out_total = out_size * out_size;                       //输出的每层中元素个数
+    float *conv_weight = c_p.p_weight;                         //權重
+    float *bias_oi = c_p.p_bias;                               //偏移量
+    Matrix newm(out_size, out_size, out_channels);
+
+    float **kernel = new float *[out_channels]; //存儲核的容器
+    for (int i = 0; i < out_channels; i++)
+    {
+        kernel[i] = new float[in_totalsize * in_channels];
+    }
+
+    //存儲核
+    for (int o = 0; o < out_channels; ++o)
+    {
+        for (int i = 0; i < in_channels; ++i)
+        {
+            int begin = i * in_totalsize;
+            // weights
+            kernel[o][begin] = conv_weight[o * (in_channels * 3 * 3) + i * (3 * 3) + 0];
+            kernel[o][begin + 1] = conv_weight[o * (in_channels * 3 * 3) + i * (3 * 3) + 1];
+            kernel[o][begin + 2] = conv_weight[o * (in_channels * 3 * 3) + i * (3 * 3) + 2];
+            kernel[o][begin + 3] = conv_weight[o * (in_channels * 3 * 3) + i * (3 * 3) + 3];
+            kernel[o][begin + 4] = conv_weight[o * (in_channels * 3 * 3) + i * (3 * 3) + 4];
+            kernel[o][begin + 5] = conv_weight[o * (in_channels * 3 * 3) + i * (3 * 3) + 5];
+            kernel[o][begin + 6] = conv_weight[o * (in_channels * 3 * 3) + i * (3 * 3) + 6];
+            kernel[o][begin + 7] = conv_weight[o * (in_channels * 3 * 3) + i * (3 * 3) + 7];
+            kernel[o][begin + 8] = conv_weight[o * (in_channels * 3 * 3) + i * (3 * 3) + 8];
+        }
+    }
+
+    //卷积
+    for (int out_ch = 0; out_ch < out_channels; out_ch++) //输出通道数，一层一层卷
+    {
+        int move = 0;
+        int moverow = 0;
+        for (int i = 0; i < out_total; i++) //输出结果中每一层的元素个数
+        {
+            float sum = 0;
+            int movecol = move % m.column;
+            for (int in = 0; in < in_channels; in++) //核通道数
+            {
+                //原方法
+                for (int in_ele = 0; in_ele < in_totalsize; in_ele++) //核中每一层元素
+                {
+                    int mchannel = in * m.row * m.column;
+                    int row = moverow + in_ele / in_size;
+                    int col = movecol + in_ele % in_size;
+                    sum += kernel[out_ch][in * in_totalsize + in_ele] * m.data[mchannel + row * m.column + col];
+                }
+
+                //优化方法
+                //int mchannel = in * m.row * m.column;
+                //sum += kernel[out_ch][in * in_totalsize] * m.data[mchannel + moverow * m.column + movecol];
+                //sum += kernel[out_ch][in * in_totalsize+1] * m.data[mchannel + moverow * m.column + movecol + 1];
+                //sum += kernel[out_ch][in * in_totalsize+2] * m.data[mchannel + moverow * m.column + movecol + 2];
+                //sum += kernel[out_ch][in * in_totalsize+3] * m.data[mchannel + (moverow + 1) * m.column + movecol];
+                //sum += kernel[out_ch][in * in_totalsize+4] * m.data[mchannel + (moverow + 1) * m.column + movecol + 1];
+                //sum += kernel[out_ch][in * in_totalsize+5] * m.data[mchannel + (moverow + 1) * m.column + movecol + 2];
+                //sum += kernel[out_ch][in * in_totalsize+6] * m.data[mchannel + (moverow + 2) * m.column + movecol];
+                //sum += kernel[out_ch][in * in_totalsize+7] * m.data[mchannel + (moverow + 2) * m.column + movecol + 1];
+                //sum += kernel[out_ch][in * in_totalsize+8] * m.data[mchannel + (moverow + 2) * m.column + movecol + 2];
+            }
+            newm.data[out_ch * out_total + i] = sum + bias_oi[out_ch]; //计算一层
+            //移動核
+            move += c_p.stride;
+            if (move + in_size > m.column)
+            {
+                moverow += c_p.stride;
+                move = 0;
+            }
+        }
+    }
+
+    for (int i = 0; i < out_channels; i++)
+    {
+        delete[] kernel[i];
+    }
+    delete[] kernel;
+
+    return newm;
+};
+Matrix pad(Matrix &m, conv_param &c_p)
+{
+    int pad = c_p.pad;
+    Matrix newm(m.row + pad * 2, m.column + pad * 2, m.channel);
+    for (int c = 0; c < m.channel; c++)
+    {
+        for (int i = pad; i < m.row + pad; i++)
+        {
+            for (int j = pad; j < m.column + pad; j++)
+            {
+                newm.data[c * newm.column * newm.row + i * newm.column + j] = m.data[c * m.column * m.row + (i - pad) * m.column + j - pad];
+            }
+        }
+    }
+
+    return newm;
+};
+Matrix &RLU(Matrix &m)
+{
+    for (int c = 0; c < m.channel; c++)
+    {
+        for (int i = 0; i < m.row; i++)
+        {
+            for (int j = 0; j < m.column; j++)
+            {
+                if (m.data[c * m.column * m.row + i * m.column + j] < 0)
+                    m.data[c * m.column * m.row + i * m.column + j] = 0;
+            }
+        }
+    }
+
+    return m;
+};
+Matrix maxpool(Matrix &m)
+{
+    int r = m.row;
+    int c = m.column;
+    Matrix newm(r / 2, c / 2, m.channel);
+    int newchannelgap = newm.row * newm.column;
+    int channelgap = r * c;
+    //方法一：2x2的块为单位进行内部比较
+    for (int ch = 0; ch < m.channel; ch++)
+    {
+        for (int i = 0; i < r; i += 2)
+        {
+            for (int j = 0; j < c; j += 2)
+            {
+
+                float max = m.data[ch * channelgap + i * c + j] > m.data[ch * channelgap + i * c + j + 1] ? m.data[ch * channelgap + i * c + j] : m.data[ch * channelgap + i * c + j + 1];
+                max = m.data[ch * channelgap + (i + 1) * c + j] > max ? m.data[ch * channelgap + (i + 1) * c + j] : max;
+                max = m.data[ch * channelgap + (i + 1) * c + j + 1] > max ? m.data[ch * channelgap + (i + 1) * c + j + 1] : max;
+                newm.data[ch * newchannelgap + i / 2 * newm.column + j / 2] = max;
+            }
+        }
+    }
+    //方法二：按顺序依次比较
+    // for (int ch = 0; ch < m.channel; ch++)
+    // {
+    // 	for (int i = 0; i < r; i++)
+    // 	{
+    // 		for (int j = 0; j < c; j +=2)
+    // 		{
+    // 			int newm_location = ch * newchannelgap + i / 2 * newm.column + j / 2;
+    //             float max = m.data[ch * channelgap + i * c + j] > m.data[ch * channelgap + i * c + j + 1] ? m.data[ch * channelgap + i * c + j] : m.data[ch * channelgap + i * c + j + 1];
+    // 			newm.data[newm_location] = max > newm.data[newm_location]? max : newm.data[newm_location];
+    // 		}
+    // 	}
+    // }
+    return newm;
+}
+Matrix conv_layer(conv_param c_p, Matrix &m)
+{
+    Matrix padm(pad(m, c_p));
+    Matrix convm(conv(c_p, padm));
+    return RLU(convm);
+}
+Matrix fc(Matrix &input)
+{
+    input.row = input.row * input.column * input.channel;
+    input.column = 1;
+    input.channel = 1;
+
+    int arow = 2;
+    int acol = input.row;
+    Matrix newmatrix(2, 1, 1);
+
+    for (int i = 0; i < arow; i++)
+    {
+        for (int j = 0; j < input.column; j++)
+        {
+            for (int k = 0; k < input.row; k++)
+            {
+                newmatrix.data[i * input.column + j] += input.data[k * input.column + j] * fc0_weight[i * acol + k];
+            }
+        }
+    }
+    for (int i = 0; i < newmatrix.row; i++)
+    {
+        newmatrix.data[i] += fc0_bias[i];
+    }
+
+    return newmatrix;
+}
+float *softmax(Matrix &fc)
+{
+    float *p = new float[fc.row];
+    float *expelement = new float[fc.row];
+    float sum = 0;
+    for (int i = 0; i < fc.row; i++)
+    {
+        float expf = exp(fc.data[i]);
+        sum += expf;
+        expelement[i] = expf;
+    }
+
+    for (int i = 0; i < fc.row; i++)
+    {
+        p[i] = expelement[i] / sum;
+    }
+
+    delete[] expelement;
+    return p;
+}
+//自定義矩陣的函數
 Matrix::Matrix(int row, int column, int channel)
 {
-	name = "unamed" + to_string(++matrixnumber);
-	fromname = "none";
-	this->row = row;
-	this->column = column;
-	this->channel = channel;
-	data = new float[row * column * channel]();
-	refcount = new int(1);
-	printf("Create %s (row, column)\n", name.c_str());
+    this->row = row;
+    this->column = column;
+    this->channel = channel;
+    data = new float[row * column * channel]();
+    refcount = new int(1);
 };
-Matrix::Matrix(const Matrix &m) //Matrix A=B+C会跳过该方法
+Matrix::Matrix(const Matrix &m)
 {
-	name = "unamed" + to_string(++matrixnumber);
-	fromname = m.name;
-	row = m.row;
-	column = m.column;
-	data = m.data;
-	channel = m.channel;
-	refcount = m.refcount;
-	(*refcount)++;
-	printf("Create %s (matrix constructor)\n", name.c_str());
+    row = m.row;
+    column = m.column;
+    data = m.data;
+    channel = m.channel;
+    refcount = m.refcount;
+    (*refcount)++;
 };
-Matrix Matrix::operator*(const Matrix &m) const //好像有点问题
-{
-	Matrix newmatrix(row, m.column, m.channel);
-	int error = row % 4;
-
-	for (int i = 0; i < row - error; i += 4)
-	{
-		for (int j = 0; j < m.row; j++)
-		{
-			float multiplier1 = data[i * column + j];
-			float multiplier2 = data[(i + 1) * column + j];
-			float multiplier3 = data[(i + 2) * column + j];
-			float multiplier4 = data[(i + 3) * column + j];
-
-			for (int k = 0; k < m.column; k++)
-			{
-				newmatrix.data[i * m.column + k] += multiplier1 * m.data[j * m.column + k];
-				newmatrix.data[(i + 1) * m.column + k] += multiplier1 * m.data[j * m.column + k];
-				newmatrix.data[(i + 2) * m.column + k] += multiplier1 * m.data[j * m.column + k];
-				newmatrix.data[(i + 3) * m.column + k] += multiplier1 * m.data[j * m.column + k];
-			}
-		}
-	}
-
-	for (int i = row - error; i < row; i++)
-	{
-		for (int j = 0; j < m.row; j++)
-		{
-			float multiplier = data[i * column + j];
-			for (int k = 0; k < m.column; k++)
-			{
-				newmatrix.data[i * m.column + k] += multiplier * m.data[j * m.column + k];
-			}
-		}
-	}
-
-	return newmatrix;
-};
-
 Matrix::~Matrix()
 {
-	--(*refcount);
-	if (*refcount > 0)
-	{
-		printf("[Times of being used of %s(from %s)'s data decrease to %d]\n",
-			   name.c_str(), fromname.c_str(), *refcount);
-	}
-	else if (*refcount == 0)
-	{
-		printf("[delete %s(from %s)'s data]\n", name.c_str(), fromname.c_str());
-		delete data;
-		delete refcount;
-	}
-	else
-	{
-		printf("[%s(from %s) has been delete]\n", name.c_str(), fromname.c_str());
-	}
+    --(*refcount);
+    if (*refcount == 0)
+    {
+        delete data;
+        delete refcount;
+    }
 }
