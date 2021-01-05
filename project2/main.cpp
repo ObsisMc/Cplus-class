@@ -3,7 +3,7 @@
 #include <chrono>
 #include <cmath>
 #include <fstream>
-//#pragma GCC optimize(2)
+//#pragma GCC optimize(3,"Ofast","inline")
 
 using namespace cv;
 using namespace std;
